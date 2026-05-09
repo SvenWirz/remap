@@ -233,6 +233,18 @@ abstract class Transformation {
     return this.mapping.hasMapperFor(sourceType, destinationType);
   }
 
+  /**
+   * Returns the {@link CollectionMappingKey} for the specified source and destination types if one was registered.
+   *
+   * @param sourceType The source element type
+   * @param destinationType The destination element type
+   * @return Returns an {@link Optional} containing the {@link CollectionMappingKey} if one was registered.
+   */
+  <S, T> java.util.Optional<CollectionMappingKey<S, T, ?>> getCollectionKeyMapping(Class<S> sourceType,
+      Class<T> destinationType) {
+    return this.mapping.getCollectionKeyMapping(sourceType, destinationType);
+  }
+
   PropertyDescriptor getSourceProperty() {
     return sourceProperty;
   }

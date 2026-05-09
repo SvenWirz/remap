@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -66,6 +67,11 @@ public class MappingConfiguration<S, D> {
    * Holds the list of mappers registered for hierarchical mapping.
    */
   private Map<Projection<?, ?>, InternalMapper<?, ?>> mappers;
+
+  /**
+   * Holds the collection key mappings for mapInto collection matching.
+   */
+  private Map<Projection<?, ?>, CollectionMappingKey<?, ?, ?>> collectionKeyMappings;
 
   /**
    * Holds the list of mapping operations.
@@ -135,11 +141,12 @@ public class MappingConfiguration<S, D> {
     this.mappedSourceProperties = new HashSet<>();
     this.mappedDestinationProperties = new HashSet<>();
     /*
-     * A plain HashMap is sufficient here: the registry is populated during configuration and is only read while
+     * A plain HashMap is sufficient here: the registries are populated during configuration and are only read while
      * mapping. The former Hashtable synchronized every lookup which caused lock contention when a mapper was shared
      * between threads.
      */
     this.mappers = new HashMap<>();
+    this.collectionKeyMappings = new HashMap<>();
   }
 
   private InvocationSensor<?> getSourceInvocationSensor() {
@@ -774,6 +781,41 @@ public class MappingConfiguration<S, D> {
   }
 
   /**
+   * Registers a configured mapper to this object that is to be used whenever a hierarchical mapping
+   * tries to map the specified types. Additionally registers key extractor functions that are used
+   * to match source elements to destination elements in collections during
+   * {@link Mapper#map(Object, Object)} (mapInto) operations.
+   *
+   * <p>
+   * When mapping into an existing destination object, collections are handled by matching source elements
+   * to destination elements using the specified key extractors. Elements with matching keys are mapped into
+   * each other, preserving destination-only fields. Source elements without a matching destination element
+   * are mapped to new destination objects. Destination elements without a matching source element are discarded.
+   * </p>
+   *
+   * <b>Note: Only one mapper can be added for a combination of source and destination type!</b>
+   *
+   * @param <CM> The source type of the mapper.
+   * @param <CD> The destination type of the mapper.
+   * @param <K> The key type used for matching elements.
+   * @param mapper A mapper.
+   * @param sourceKeyExtractor Function to extract the matching key from a source element.
+   * @param destinationKeyExtractor Function to extract the matching key from a destination element.
+   * @return Returns this {@link MappingConfiguration} object for further configuration.
+   */
+  public <CM, CD, K> MappingConfiguration<S, D> useMapper(Mapper<CM, CD> mapper, Function<CM, K> sourceKeyExtractor,
+      Function<CD, K> destinationKeyExtractor) {
+    denyNull("mapper", mapper);
+    denyNull("sourceKeyExtractor", sourceKeyExtractor);
+    denyNull("destinationKeyExtractor", destinationKeyExtractor);
+    InternalMapper<CM, CD> internalMapper = new MapperAdapter<>(mapper);
+    useInternalMapper(internalMapper);
+    Projection<?, ?> projection = internalMapper.getProjection();
+    collectionKeyMappings.put(projection, new CollectionMappingKey<>(sourceKeyExtractor, destinationKeyExtractor));
+    return this;
+  }
+
+  /**
    * Disables the creation of implicit mappings, so that fields with the same name and same type are not mapped
    * automatically any more. This requires the user to define the mappings explicitly using
    * {@link #reassign(FieldSelector)} or any other mapping operation.
@@ -875,6 +917,21 @@ public class MappingConfiguration<S, D> {
   public <S1, D1> boolean hasMapperFor(Class<S1> sourceType, Class<D1> destinationType) {
     Projection<?, ?> projection = new Projection<>(sourceType, destinationType);
     return mappers.containsKey(projection);
+  }
+
+  /**
+   * Returns the {@link CollectionMappingKey} for the specified source and destination types if one was registered.
+   *
+   * @param sourceType The source element type
+   * @param destinationType The destination element type
+   * @return Returns an {@link Optional} containing the {@link CollectionMappingKey} if one was registered.
+   */
+  @SuppressWarnings("unchecked")
+  <S1, D1> Optional<CollectionMappingKey<S1, D1, ?>> getCollectionKeyMapping(Class<S1> sourceType,
+      Class<D1> destinationType) {
+    Projection<?, ?> projection = new Projection<>(sourceType, destinationType);
+    CollectionMappingKey<?, ?, ?> keyMapping = collectionKeyMappings.get(projection);
+    return Optional.ofNullable((CollectionMappingKey<S1, D1, ?>) keyMapping);
   }
 
   /**
