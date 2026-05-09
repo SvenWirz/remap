@@ -47,8 +47,8 @@ public class WriteNullTest {
     assertThatThrownBy(() -> AssertMapping.of(mapper)
         .expectToWriteNullIfSourceIsNull()
         .ensure()).isInstanceOf(AssertionError.class)
-            .hasMessageContaining(
-                "The mapper was expected to write null values if the source value is null, but the current mapper is configured to skip mappings if source value is null.");
+        .hasMessageContaining(
+            "The mapper was expected to write null values if the source value is null, but the current mapper is configured to skip mappings if source value is null.");
   }
 
 }

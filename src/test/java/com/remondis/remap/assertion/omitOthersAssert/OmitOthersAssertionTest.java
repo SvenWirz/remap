@@ -19,8 +19,8 @@ public class OmitOthersAssertionTest {
 
     assertThatThrownBy(() -> AssertMapping.of(mapper)
         .ensure()).hasMessageContaining("The following unexpected transformation were specified on the mapping:\n")
-            .hasMessageContaining("- Omitting Property 'number' in BeanWithFields\n")
-            .hasMessageContaining("- Omitting Property 'string' in BeanWithFields\n");
+        .hasMessageContaining("- Omitting Property 'number' in BeanWithFields\n")
+        .hasMessageContaining("- Omitting Property 'string' in BeanWithFields\n");
   }
 
   @Test
@@ -32,8 +32,8 @@ public class OmitOthersAssertionTest {
 
     assertThatThrownBy(() -> AssertMapping.of(mapper)
         .ensure()).hasMessageContaining("The following unexpected transformation were specified on the mapping:\n")
-            .hasMessageContaining("- Omitting Property 'number' in BeanWithFields\n")
-            .hasMessageContaining("- Omitting Property 'string' in BeanWithFields\n");
+        .hasMessageContaining("- Omitting Property 'number' in BeanWithFields\n")
+        .hasMessageContaining("- Omitting Property 'string' in BeanWithFields\n");
   }
 
 }

@@ -26,8 +26,8 @@ public class CustomTypeConversionsTest {
     assertThatThrownBy(() -> Mapping.from(A.class)
         .to(AResource.class)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessage("No mapper found for type mapping from java.lang.CharSequence to java.lang.String.\n"
-                + "For example used by the property mapping from Property 'addresses' in A to Property 'addresses' in AResource.");
+        .hasMessage("No mapper found for type mapping from java.lang.CharSequence to java.lang.String.\n"
+            + "For example used by the property mapping from Property 'addresses' in A to Property 'addresses' in AResource.");
   }
 
   @Test
