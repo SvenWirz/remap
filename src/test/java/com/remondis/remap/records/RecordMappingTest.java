@@ -375,8 +375,10 @@ public class RecordMappingTest {
 
   // ==================== Error Cases ====================
 
-  @Test(expected = UnsupportedOperationException.class)
-  public void shouldThrowOnMapIntoRecord() {
+  // ==================== MapInto (map with existing record) ====================
+
+  @Test
+  public void shouldMapIntoRecord_overwriteAllFields() {
     Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
         .to(PersonRecord.class)
         .mapper();
@@ -384,7 +386,137 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
     PersonRecord existing = new PersonRecord("Old", 0, "old@example.com", false);
 
-    mapper.map(source, existing);
+    PersonRecord result = mapper.map(source, existing);
+
+    assertEquals("Alice", result.name());
+    assertEquals(30, result.age());
+    assertEquals("alice@example.com", result.email());
+    assertTrue(result.active());
+  }
+
+  @Test
+  public void shouldMapIntoRecord_preserveOmittedFields() {
+    Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
+        .to(PersonRecord.class)
+        .omitInSource(PersonPojo::getAge)
+        .omitInDestination(PersonRecord::age)
+        .omitInSource(PersonPojo::isActive)
+        .omitInDestination(PersonRecord::active)
+        .mapper();
+
+    PersonPojo source = new PersonPojo("Alice", 99, "alice@example.com", true);
+    PersonRecord existing = new PersonRecord("Old", 42, "old@example.com", true);
+
+    PersonRecord result = mapper.map(source, existing);
+
+    // Mapped fields are overwritten
+    assertEquals("Alice", result.name());
+    assertEquals("alice@example.com", result.email());
+    // Omitted fields are preserved from existing record
+    assertEquals(42, result.age());
+    assertTrue(result.active());
+  }
+
+  @Test
+  public void shouldMapIntoRecord_returnsNewInstance() {
+    Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
+        .to(PersonRecord.class)
+        .mapper();
+
+    PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
+    PersonRecord existing = new PersonRecord("Old", 0, "old@example.com", false);
+
+    PersonRecord result = mapper.map(source, existing);
+
+    // Records are immutable — result must be a new instance
+    assertFalse(result == existing);
+  }
+
+  @Test
+  public void shouldMapIntoRecord_recordToRecord_preserveOmitted() {
+    Mapper<PersonRecord, PersonResourceRecord> mapper = Mapping.from(PersonRecord.class)
+        .to(PersonResourceRecord.class)
+        .reassign(PersonRecord::name)
+        .to(PersonResourceRecord::fullName)
+        .reassign(PersonRecord::email)
+        .to(PersonResourceRecord::emailAddress)
+        .omitInSource(PersonRecord::age)
+        .omitInSource(PersonRecord::active)
+        .omitInDestination(PersonResourceRecord::yearsOld)
+        .omitInDestination(PersonResourceRecord::isActive)
+        .mapper();
+
+    PersonRecord source = new PersonRecord("New", 10, "new@example.com", false);
+    PersonResourceRecord existing = new PersonResourceRecord("Old", 50, "old@example.com", true);
+
+    PersonResourceRecord result = mapper.map(source, existing);
+
+    // Mapped fields overwritten
+    assertEquals("New", result.fullName());
+    assertEquals("new@example.com", result.emailAddress());
+    // Omitted fields preserved from existing
+    assertEquals(50, result.yearsOld());
+    assertTrue(result.isActive());
+  }
+
+  @Test
+  public void shouldMapIntoRecord_withNullDestination_createsNew() {
+    Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
+        .to(PersonRecord.class)
+        .mapper();
+
+    PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
+    PersonRecord result = mapper.map(source, null);
+
+    assertEquals("Alice", result.name());
+    assertEquals(30, result.age());
+  }
+
+  @Test
+  public void shouldMapIntoRecord_withNestedMapper() {
+    Mapper<AddressPojo, AddressRecord> addressMapper = Mapping.from(AddressPojo.class)
+        .to(AddressRecord.class)
+        .mapper();
+
+    Mapper<PersonWithAddressPojo, PersonWithAddressRecord> mapper = Mapping.from(PersonWithAddressPojo.class)
+        .to(PersonWithAddressRecord.class)
+        .useMapper(addressMapper)
+        .mapper();
+
+    PersonWithAddressPojo source = new PersonWithAddressPojo("New", new AddressPojo("New St", "New City"));
+    PersonWithAddressRecord existing = new PersonWithAddressRecord("Old", new AddressRecord("Old St", "Old City"));
+
+    PersonWithAddressRecord result = mapper.map(source, existing);
+
+    assertEquals("New", result.name());
+    assertNotNull(result.address());
+    assertEquals("New St", result.address()
+        .street());
+    assertEquals("New City", result.address()
+        .city());
+  }
+
+  @Test
+  public void shouldMapIntoRecord_withReplace() {
+    Mapper<PersonPojo, PersonResourceRecord> mapper = Mapping.from(PersonPojo.class)
+        .to(PersonResourceRecord.class)
+        .replace(PersonPojo::getName, PersonResourceRecord::fullName)
+        .with(name -> name.toUpperCase())
+        .reassign(PersonPojo::getAge)
+        .to(PersonResourceRecord::yearsOld)
+        .reassign(PersonPojo::getEmail)
+        .to(PersonResourceRecord::emailAddress)
+        .reassign(PersonPojo::isActive)
+        .to(PersonResourceRecord::isActive)
+        .mapper();
+
+    PersonPojo source = new PersonPojo("Bob", 25, "bob@example.com", false);
+    PersonResourceRecord existing = new PersonResourceRecord("Old", 99, "old@example.com", true);
+
+    PersonResourceRecord result = mapper.map(source, existing);
+
+    assertEquals("BOB", result.fullName());
+    assertEquals(25, result.yearsOld());
   }
 
   @Test(expected = MappingException.class)

@@ -887,11 +887,7 @@ public class MappingConfiguration<S, D> {
       throw MappingException.denyMappingOfNull();
     }
     if (this.destination.isRecord()) {
-      if (destination != null) {
-        throw new UnsupportedOperationException(
-            "Cannot map into an existing record instance. Records are immutable. Use map(source) instead.");
-      }
-      return mapToRecord(source);
+      return mapToRecord(source, destination);
     }
     D destinationObject = destination;
     if (destination == null) {
@@ -905,16 +901,28 @@ public class MappingConfiguration<S, D> {
 
   /**
    * Maps the source object to a new record instance by collecting all transformation values and invoking
-   * the canonical constructor.
+   * the canonical constructor. If an existing record is provided, its component values are used as defaults
+   * so that unmapped/omitted fields retain their original values.
+   *
+   * @param source The source object.
+   * @param existingRecord An optional existing record whose values serve as defaults. May be {@code null}.
    */
   @SuppressWarnings("unchecked")
-  private D mapToRecord(S source) {
+  private D mapToRecord(S source, D existingRecord) {
     RecordComponent[] components = destination.getRecordComponents();
     Map<String, Object> values = new LinkedHashMap<>();
 
-    // Initialize with default values for primitives, null for objects
+    // Initialize values: from existing record if provided, otherwise defaults
     for (RecordComponent component : components) {
-      if (component.getType()
+      if (existingRecord != null) {
+        try {
+          values.put(component.getName(), component.getAccessor()
+              .invoke(existingRecord));
+        } catch (Exception e) {
+          throw new MappingException(String.format("Could not read record component '%s' from %s.", component.getName(),
+              destination.getSimpleName()), e);
+        }
+      } else if (component.getType()
           .isPrimitive()) {
         values.put(component.getName(), ReflectionUtil.defaultValue(component.getType()));
       } else {
