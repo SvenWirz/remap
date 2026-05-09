@@ -23,8 +23,8 @@ public class NestedCollectionsTest {
     assertThatThrownBy(() -> Mapping.from(A.class)
         .to(AResource.class)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessageContaining(
-                "No mapper found for type mapping from com.remondis.remap.basic.B to com.remondis.remap.basic.BResource.");
+        .hasMessageContaining(
+            "No mapper found for type mapping from com.remondis.remap.basic.B to com.remondis.remap.basic.BResource.");
 
   }
 

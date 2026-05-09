@@ -54,7 +54,7 @@ public class MapperTest {
         .reassign(A::getZahlInA)
         .to(AResource::getZahlInAResource)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessageStartingWith("No mapper found for type mapping");
+        .hasMessageStartingWith("No mapper found for type mapping");
   }
 
   /**
@@ -108,7 +108,7 @@ public class MapperTest {
     assertThatThrownBy(() -> Mapping.from(AWithOneMoreSourceField.class)
         .to(AResourceWithOneMoreSourceField.class)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessageContaining("- Property 'onlyInA' in AWithOneMoreSourceField");
+        .hasMessageContaining("- Property 'onlyInA' in AWithOneMoreSourceField");
   }
 
   /**
@@ -139,7 +139,7 @@ public class MapperTest {
     assertThatThrownBy(() -> Mapping.from(AWithOneMoreDestinationField.class)
         .to(AResourceWithOneMoreDestinationField.class)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessageContaining("- Property 'onlyInAResource' in AResourceWithOneMoreDestinationField");
+        .hasMessageContaining("- Property 'onlyInAResource' in AResourceWithOneMoreDestinationField");
   }
 
   /**

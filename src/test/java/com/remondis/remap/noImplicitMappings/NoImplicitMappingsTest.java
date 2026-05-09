@@ -87,7 +87,7 @@ public class NoImplicitMappingsTest {
         .expectReassign(A::getString)
         .to(A::getString)
         .ensure()).isInstanceOf(AssertionError.class)
-            .hasMessage("The mapper was expected to create implicit mappings but the actual mapper does not.");
+        .hasMessage("The mapper was expected to create implicit mappings but the actual mapper does not.");
   }
 
   @Test
@@ -104,7 +104,7 @@ public class NoImplicitMappingsTest {
         .expectReplace(A::getMap, A::getMap)
         .andSkipWhenNull()
         .ensure()).isInstanceOf(AssertionError.class)
-            .hasMessage("The mapper was expected to create no implicit mappings but the actual mapper does.");
+        .hasMessage("The mapper was expected to create no implicit mappings but the actual mapper does.");
   }
 
 }

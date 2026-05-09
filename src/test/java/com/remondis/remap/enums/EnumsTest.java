@@ -33,7 +33,7 @@ public class EnumsTest {
     assertThatThrownBy(() -> Mapping.from(Person.class)
         .to(AnotherResource.class)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessageStartingWith("No mapper found for type mapping from ");
+        .hasMessageStartingWith("No mapper found for type mapping from ");
   }
 
 }

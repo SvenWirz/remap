@@ -56,6 +56,6 @@ public class EntityMappingTest {
     assertThatThrownBy(() -> AssertMapping.of(implicitMapper)
         .expectNoImplicitMappings()
         .ensure()).isInstanceOf(AssertionError.class)
-            .hasMessageContaining("The mapper was expected to create no implicit mappings");
+        .hasMessageContaining("The mapper was expected to create no implicit mappings");
   }
 }

@@ -35,24 +35,24 @@ public class MapsTest {
         .useMapper(a2Mapper)
         .useMapper(a3Mapper)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessageContaining(
-                "No mapper found for type mapping from com.remondis.remap.maps.nested.A1 to com.remondis.remap.maps.nested.A1Mapped.");
+        .hasMessageContaining(
+            "No mapper found for type mapping from com.remondis.remap.maps.nested.A1 to com.remondis.remap.maps.nested.A1Mapped.");
 
     assertThatThrownBy(() -> Mapping.from(A.class)
         .to(AMapped.class)
         .useMapper(a1Mapper)
         .useMapper(a3Mapper)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessageContaining(
-                "No mapper found for type mapping from com.remondis.remap.maps.nested.A2 to com.remondis.remap.maps.nested.A2Mapped.");
+        .hasMessageContaining(
+            "No mapper found for type mapping from com.remondis.remap.maps.nested.A2 to com.remondis.remap.maps.nested.A2Mapped.");
 
     assertThatThrownBy(() -> Mapping.from(A.class)
         .to(AMapped.class)
         .useMapper(a1Mapper)
         .useMapper(a2Mapper)
         .mapper()).isInstanceOf(MappingException.class)
-            .hasMessageContaining(
-                "No mapper found for type mapping from com.remondis.remap.maps.nested.A3 to com.remondis.remap.maps.nested.A3Mapped.");
+        .hasMessageContaining(
+            "No mapper found for type mapping from com.remondis.remap.maps.nested.A3 to com.remondis.remap.maps.nested.A3Mapped.");
   }
 
   @Test

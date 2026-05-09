@@ -65,7 +65,8 @@ public class NdepthRestructureTest {
         .expectOtherSourceFieldsToBeOmitted()
         .expectRestructure(Bean2::getPerson)
         .implicitly()
-        .ensure()).hasMessage("The mapping from source type com.remondis.remap.restructure.Bean\n"
+        .ensure())
+        .hasMessage("The mapping from source type com.remondis.remap.restructure.Bean\n"
             + "used for restructuring of field Property 'person' in com.remondis.remap.restructure.ndepth.Bean2\n"
             + "was configured to apply specific mapping configuration but was expected to create implicit mapping.");
   }
@@ -89,7 +90,8 @@ public class NdepthRestructureTest {
         .applying(config -> config.expectRestructure(Person::getAddress)
             .applying(bean2AddressMapper -> bean2AddressMapper.expectReassign(Bean::getCity)
                 .to(Address::getCity)))
-        .ensure()).hasMessage("The mapping from source type com.remondis.remap.restructure.Bean\n"
+        .ensure())
+        .hasMessage("The mapping from source type com.remondis.remap.restructure.Bean\n"
             + "used for restructuring of field in Property 'person' in com.remondis.remap.restructure.ndepth.Bean2\n"
             + "did not meet assertions:\n"
             + "The following expected transformation were not specified on the mapping:\n"
@@ -104,7 +106,8 @@ public class NdepthRestructureTest {
         .applying(config -> config.expectRestructure(Person::getAddress)
             .applying(bean2AddressMapper -> bean2AddressMapper.expectReassign(Bean::getCity)
                 .to(Address::getCity)))
-        .ensure()).hasMessage("The mapping from source type com.remondis.remap.restructure.Bean\n"
+        .ensure())
+        .hasMessage("The mapping from source type com.remondis.remap.restructure.Bean\n"
             + "used for restructuring of field in Property 'person' in com.remondis.remap.restructure.ndepth.Bean2\n"
             + "did not meet assertions:\n" + "The mapping from source type com.remondis.remap.restructure.Bean\n"
             + "used for restructuring of field Property 'address' in com.remondis.remap.restructure.ndepth.Person\n"
