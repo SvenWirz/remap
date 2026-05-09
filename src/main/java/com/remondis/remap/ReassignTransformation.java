@@ -10,6 +10,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -170,7 +171,7 @@ public class ReassignTransformation extends Transformation {
   }
 
   private Map<Object, Object> buildLookup(Collection<?> collection, Function<Object, ?> keyExtractor) {
-    Map<Object, Object> lookup = new java.util.LinkedHashMap<>();
+    Map<Object, Object> lookup = new LinkedHashMap<>();
     for (Object element : collection) {
       if (element != null) {
         Object key = keyExtractor.apply(element);

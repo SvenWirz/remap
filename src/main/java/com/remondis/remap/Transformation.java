@@ -6,6 +6,7 @@ import static java.util.Objects.isNull;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Optional;
 
 /**
  * This is the base class for a transformation that performs a single step when mapping from an object to another
@@ -240,7 +241,7 @@ abstract class Transformation {
    * @param destinationType The destination element type
    * @return Returns an {@link Optional} containing the {@link CollectionMappingKey} if one was registered.
    */
-  <S, T> java.util.Optional<CollectionMappingKey<S, T, ?>> getCollectionKeyMapping(Class<S> sourceType,
+  <S, T> Optional<CollectionMappingKey<S, T, ?>> getCollectionKeyMapping(Class<S> sourceType,
       Class<T> destinationType) {
     return this.mapping.getCollectionKeyMapping(sourceType, destinationType);
   }
