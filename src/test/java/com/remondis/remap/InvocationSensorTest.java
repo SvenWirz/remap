@@ -1,22 +1,15 @@
 package com.remondis.remap;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import org.junit.Before;
 import org.junit.Test;
 
 public class InvocationSensorTest {
-
-  @Before
-  public void setup() {
-    InvocationSensor.interceptionHandlerCache.clear();
-  }
 
   @Test
   public void shouldCacheThreadSafe() {
@@ -26,8 +19,6 @@ public class InvocationSensorTest {
 
     Semaphore s2 = new Semaphore(1);
     s2.acquireUninterruptibly();
-
-    InterceptionHandler<?> interceptionHandler = InvocationSensor.interceptionHandlerCache.get(DummyDto.class);
 
     Thread t1 = new Thread(new Runnable() {
 
@@ -52,33 +43,33 @@ public class InvocationSensorTest {
 
   @Test
   public void shouldCache() {
-    assertTrue(InvocationSensor.interceptionHandlerCache.isEmpty());
+    InvocationSensor<DummyDto> first = new InvocationSensor<>(DummyDto.class);
+    InvocationSensor<DummyDto> second = new InvocationSensor<>(DummyDto.class);
+    // The proxy is created once per type and cached, so all sensors of a type share the same proxy instance.
+    assertSame(first.getSensor(), second.getSensor());
+  }
+
+  @Test
+  public void shouldTrackInvocations() {
     InvocationSensor<DummyDto> invocationSensor = new InvocationSensor<>(DummyDto.class);
-    assertFalse(InvocationSensor.interceptionHandlerCache.isEmpty());
-    assertTrue(InvocationSensor.interceptionHandlerCache.containsKey(DummyDto.class));
-    assertNotNull(InvocationSensor.interceptionHandlerCache.get(DummyDto.class));
-
-    InterceptionHandler<?> interceptionHandler = InvocationSensor.interceptionHandlerCache.get(DummyDto.class);
-
     DummyDto sensor = invocationSensor.getSensor();
-    sensor.getString();
 
-    List<String> trackedPropertyNames = interceptionHandler.getTrackedPropertyNames();
+    sensor.getString();
+    List<String> trackedPropertyNames = invocationSensor.getTrackedPropertyNames();
     assertEquals(1, trackedPropertyNames.size());
     assertTrue(trackedPropertyNames.contains("string"));
 
     sensor.getAnotherString();
-    trackedPropertyNames = interceptionHandler.getTrackedPropertyNames();
+    trackedPropertyNames = invocationSensor.getTrackedPropertyNames();
     assertEquals(1, trackedPropertyNames.size());
     assertTrue(trackedPropertyNames.contains("anotherString"));
 
     sensor.getString();
     sensor.getAnotherString();
-    trackedPropertyNames = interceptionHandler.getTrackedPropertyNames();
+    trackedPropertyNames = invocationSensor.getTrackedPropertyNames();
     assertEquals(2, trackedPropertyNames.size());
     assertTrue(trackedPropertyNames.contains("string"));
     assertTrue(trackedPropertyNames.contains("anotherString"));
-
   }
 
 }
