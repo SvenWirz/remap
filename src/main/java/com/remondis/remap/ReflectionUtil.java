@@ -254,9 +254,35 @@ class ReflectionUtil {
    * @return Returns a new instance.
    */
   static <D> D newInstance(Class<D> type) {
+    return newInstance(defaultConstructor(type));
+  }
+
+  /**
+   * Returns the accessible default constructor of the specified type. Use this method to resolve the constructor once
+   * and create instances with {@link #newInstance(Constructor)} to avoid the constructor lookup for every instance.
+   *
+   * @param type The type to instantiate.
+   * @return Returns the accessible default constructor.
+   */
+  static <D> Constructor<D> defaultConstructor(Class<D> type) {
     try {
       Constructor<D> constructor = type.getConstructor();
       constructor.setAccessible(true);
+      return constructor;
+    } catch (Exception e) {
+      throw MappingException.newInstanceFailed(type, e);
+    }
+  }
+
+  /**
+   * Creates a new instance using the specified default constructor.
+   *
+   * @param constructor The default constructor of the type to instantiate.
+   * @return Returns a new instance.
+   */
+  static <D> D newInstance(Constructor<D> constructor) {
+    Class<D> type = constructor.getDeclaringClass();
+    try {
       return constructor.newInstance();
     } catch (InstantiationException e) {
       throw MappingException.noDefaultConstructor(type, e);

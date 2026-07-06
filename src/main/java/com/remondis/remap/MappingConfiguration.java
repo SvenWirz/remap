@@ -10,6 +10,7 @@ import static com.remondis.remap.ReflectionUtil.newInstance;
 import static java.util.Objects.nonNull;
 
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -107,6 +108,13 @@ public class MappingConfiguration<S, D> {
   private InvocationSensor<?> sourceInvocationSensor;
 
   private InvocationSensor<?> destinationInvocationSensor;
+
+  /**
+   * Caches the default constructor of the destination type. The constructor is resolved on the first mapping to avoid
+   * the reflective lookup for every mapped object. Volatile for safe publication when the mapper is shared between
+   * threads.
+   */
+  private volatile Constructor<D> destinationConstructor;
 
   MappingConfiguration(Class<S> source, Class<D> destination) {
     this.source = source;
@@ -790,7 +798,13 @@ public class MappingConfiguration<S, D> {
   }
 
   private D createDestination() {
-    return newInstance(destination);
+    Constructor<D> constructor = destinationConstructor;
+    if (constructor == null) {
+      // Benign race: concurrent first mappings may resolve the constructor multiple times with the same result.
+      constructor = ReflectionUtil.defaultConstructor(destination);
+      destinationConstructor = constructor;
+    }
+    return newInstance(constructor);
   }
 
   Class<S> getSource() {
