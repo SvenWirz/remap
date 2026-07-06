@@ -115,4 +115,11 @@ public class InvocationSensor<T> {
     return hasTrackedProperties;
   }
 
+  /**
+   * Resets the tracking state for the current thread.
+   */
+  void reset() {
+    interceptionHandler.reset();
+  }
+
 }
