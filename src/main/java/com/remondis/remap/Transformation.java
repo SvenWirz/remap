@@ -188,6 +188,19 @@ abstract class Transformation {
   }
 
   /**
+   * Returns a mapper to map the specified source type to the specified destination type or <code>null</code> if no
+   * mapper was registered. In contrast to a {@link #hasMapperFor(Class, Class)}/{@link #getMapperFor(Class, Class)}
+   * combination this requires only a single registry lookup.
+   *
+   * @param sourceType The source type
+   * @param destinationType The destination type
+   * @return Returns the registered mapper or <code>null</code>.
+   */
+  <S, T> InternalMapper<S, T> getMapperForOrNull(Class<S> sourceType, Class<T> destinationType) {
+    return this.mapping.getMapperOrNull(sourceType, destinationType);
+  }
+
+  /**
    * Checks if the specified mapper is registered.
    *
    * @param sourceType The source type

@@ -76,8 +76,8 @@ public class ReassignTransformation extends Transformation {
   })
   private Object _convert(Class<?> sourceType, Object sourceValue, Class<?> destinationType, Object destination,
       GenericParameterContext sourceCtx, GenericParameterContext destinationCtx) {
-    if (hasMapperFor(sourceType, destinationType)) {
-      InternalMapper mapper = getMapperFor(sourceType, destinationType);
+    InternalMapper mapper = getMapperForOrNull(sourceType, destinationType);
+    if (mapper != null) {
       return mapper.map(sourceValue, null);
     } else if (isMap(sourceValue)) {
       return convertMap(sourceValue, sourceCtx, destinationCtx);
