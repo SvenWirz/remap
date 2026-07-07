@@ -33,6 +33,22 @@ public class ReassignTransformation extends Transformation {
   private final GenericParameterContext sourceContext;
   private final GenericParameterContext destinationContext;
 
+  /**
+   * The conversion strategy of this transformation, resolved by {@link #validateTransformation()}. Mapper registry
+   * lookups and the collection/map/value dispatch are static configuration knowledge, so they are resolved once at
+   * validation time instead of for every mapped value. Volatile for safe publication when the mapper is shared
+   * between threads.
+   */
+  private volatile ConversionStrategy conversionStrategy;
+
+  /**
+   * A single conversion step of this transformation, resolved once at validation time.
+   */
+  @FunctionalInterface
+  private interface ConversionStrategy {
+    Object convert(Object sourceValue, Object destination);
+  }
+
   ReassignTransformation(MappingConfiguration<?, ?> mapping, PropertyDescriptor sourceProperty,
       PropertyDescriptor destinationProperty) {
     super(mapping, sourceProperty, destinationProperty);
@@ -66,108 +82,67 @@ public class ReassignTransformation extends Transformation {
 
   @Override
   protected MappedResult performValueTransformation(Object source, Object destination) throws MappingException {
-    Object destinationValue = _convert(sourceContext.getCurrentType(), source, destinationContext.getCurrentType(),
-        destination, sourceContext, destinationContext);
-    return MappedResult.value(destinationValue);
+    return MappedResult.value(conversionStrategy.convert(source, destination));
   }
 
+  /**
+   * Resolves the conversion strategy for the current generic type level. The resolution mirrors the former dispatch
+   * per mapped value: a registered mapper takes precedence, maps and collections are rebuilt per entry/element, all
+   * remaining types are reference mappings - the validation guarantees that any other type conversion has a
+   * registered mapper.
+   */
   @SuppressWarnings({
       "unchecked", "rawtypes"
   })
-  private Object _convert(Class<?> sourceType, Object sourceValue, Class<?> destinationType, Object destination,
-      GenericParameterContext sourceCtx, GenericParameterContext destinationCtx) {
+  private ConversionStrategy buildConversionStrategy(GenericParameterContext sourceCtx,
+      GenericParameterContext destCtx) {
+    Class<?> sourceType = sourceCtx.getCurrentType();
+    Class<?> destinationType = destCtx.getCurrentType();
     InternalMapper mapper = getMapperForOrNull(sourceType, destinationType);
     if (mapper != null) {
-      return mapper.map(sourceValue, null);
-    } else if (isMap(sourceValue)) {
-      return convertMap(sourceValue, sourceCtx, destinationCtx);
-    } else if (isCollection(sourceValue)) {
-      return convertCollection(sourceValue, sourceCtx, destinationCtx);
+      return (sourceValue, destination) -> mapper.map(sourceValue, null);
+    } else if (isMap(sourceType)) {
+      ConversionStrategy keyStrategy = buildConversionStrategy(sourceCtx.goInto(0), destCtx.goInto(0));
+      ConversionStrategy valueStrategy = buildConversionStrategy(sourceCtx.goInto(1), destCtx.goInto(1));
+      return mapStrategy(keyStrategy, valueStrategy);
+    } else if (isCollection(sourceType)) {
+      ConversionStrategy elementStrategy = buildConversionStrategy(sourceCtx.goInto(0), destCtx.goInto(0));
+      Collector collector = getCollector(destinationType);
+      return collectionStrategy(elementStrategy, collector);
     } else {
-      return convertValueMapOver(sourceType, sourceValue, destinationType, destination);
+      return (sourceValue, destination) -> sourceValue;
     }
   }
 
   @SuppressWarnings({
       "unchecked", "rawtypes"
   })
-  private Object convertCollection(Object sourceValue, GenericParameterContext sourceCtx,
-      GenericParameterContext destinationCtx) {
-    Class<?> destinationCollectionType = destinationCtx.getCurrentType();
-    Collection collection = (Collection) sourceValue;
-    Collector collector = getCollector(destinationCollectionType);
-    // The element types are the same for all elements, so the contexts are resolved once per collection instead of
-    // once per element.
-    GenericParameterContext elementSourceCtx = sourceCtx.goInto(0);
-    Class<?> sourceElementType = elementSourceCtx.getCurrentType();
-    GenericParameterContext elementDestCtx = destinationCtx.goInto(0);
-    Class<?> destinationElementType = elementDestCtx.getCurrentType();
-    return collection.stream()
-        .map(o -> {
-          if (o == null) {
-            throw MappingException.nullElementInCollection(this.sourceProperty, this.destinationProperty);
-          }
-          return _convert(sourceElementType, o, destinationElementType, null, elementSourceCtx, elementDestCtx);
-        })
-        .collect(collector);
-  }
-
-  @SuppressWarnings({
-      "rawtypes", "unchecked"
-  })
-  private Object convertMap(Object sourceValue, GenericParameterContext sourceCtx,
-      GenericParameterContext destinationCtx) {
-
-    GenericParameterContext sourceKeyContext = sourceCtx.goInto(0);
-    Class<?> sourceMapKeyType = sourceKeyContext.getCurrentType();
-    GenericParameterContext destKeyContext = destinationCtx.goInto(0);
-    Class<?> destinationMapKeyType = destKeyContext.getCurrentType();
-    GenericParameterContext sourceValueContext = sourceCtx.goInto(1);
-    Class<?> sourceMapValueType = sourceValueContext.getCurrentType();
-    GenericParameterContext destValueContext = destinationCtx.goInto(1);
-    Class<?> destinationMapValueType = destValueContext.getCurrentType();
-
-    Map<?, ?> map = Map.class.cast(sourceValue);
-    return map.entrySet()
-        .stream()
-        .map(o -> {
-          Object key = o.getKey();
-          Object value = o.getValue();
-          Object mappedKey = _convert(sourceMapKeyType, key, destinationMapKeyType, null, sourceKeyContext,
-              destKeyContext);
-          Object mappedValue = _convert(sourceMapValueType, value, destinationMapValueType, null, sourceValueContext,
-              destValueContext);
-          return new AbstractMap.SimpleEntry(mappedKey, mappedValue);
-        })
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  private ConversionStrategy collectionStrategy(ConversionStrategy elementStrategy, Collector collector) {
+    return (sourceValue, destination) -> {
+      Collection collection = (Collection) sourceValue;
+      return collection.stream()
+          .map(element -> {
+            if (element == null) {
+              throw MappingException.nullElementInCollection(sourceProperty, destinationProperty);
+            }
+            return elementStrategy.convert(element, null);
+          })
+          .collect(collector);
+    };
   }
 
   @SuppressWarnings({
       "unchecked", "rawtypes"
   })
-  Object convertValue(Class<?> sourceType, Object sourceValue, Class<?> destinationType) {
-    if (isReferenceMapping(sourceType, destinationType)) {
-      return sourceValue;
-    } else {
-      // Object types must be mapped by a registered mapper before setting the value.
-      InternalMapper delegateMapper = getMapperFor(sourceType, destinationType);
-      return delegateMapper.map(sourceValue);
-    }
-  }
-
-  @SuppressWarnings({
-      "unchecked", "rawtypes"
-  })
-  Object convertValueMapOver(Class<?> sourceType, Object sourceValue, Class<?> destinationType,
-      Object destinationValue) {
-    if (isReferenceMapping(sourceType, destinationType)) {
-      return sourceValue;
-    } else {
-      // Object types must be mapped by a registered mapper before setting the value.
-      InternalMapper delegateMapper = getMapperFor(sourceType, destinationType);
-      Object destinationValueMapped = readOrFail(destinationProperty, destinationValue);
-      return delegateMapper.map(sourceValue, destinationValueMapped);
-    }
+  private static ConversionStrategy mapStrategy(ConversionStrategy keyStrategy, ConversionStrategy valueStrategy) {
+    return (sourceValue, destination) -> {
+      Map<?, ?> map = Map.class.cast(sourceValue);
+      return map.entrySet()
+          .stream()
+          .map(entry -> new AbstractMap.SimpleEntry(keyStrategy.convert(entry.getKey(), null),
+              valueStrategy.convert(entry.getValue(), null)))
+          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    };
   }
 
   /**
@@ -198,15 +173,13 @@ public class ReassignTransformation extends Transformation {
     return Collection.class.isAssignableFrom(type);
   }
 
-  static boolean isCollection(Object collection) {
-    return collection instanceof Collection;
-  }
-
   @Override
   protected void validateTransformation() throws MappingException {
     // we have to check that all required mappers are known for nested mapping
     // if this transformation performs an object mapping, check for known mappers
     _validateTransformation(sourceContext, destinationContext);
+    // All required mappers are available - bind the conversion strategy for the mapping hot path.
+    this.conversionStrategy = buildConversionStrategy(sourceContext, destinationContext);
   }
 
   private void _validateTransformation(GenericParameterContext sourceCtx, GenericParameterContext destCtx) {
@@ -260,10 +233,6 @@ public class ReassignTransformation extends Transformation {
 
   private static boolean isMap(Class<?> sourceType) {
     return Map.class.isAssignableFrom(sourceType);
-  }
-
-  private static boolean isMap(Object object) {
-    return (object instanceof Map);
   }
 
   @Override
