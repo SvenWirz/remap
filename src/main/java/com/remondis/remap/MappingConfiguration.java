@@ -121,6 +121,13 @@ public class MappingConfiguration<S, D> {
    */
   private volatile Constructor<D> destinationConstructor;
 
+  /**
+   * Caches the canonical constructor of a record destination type. Resolved on the first mapping to avoid the
+   * reflective lookup for every mapped object. Volatile for safe publication when the mapper is shared between
+   * threads.
+   */
+  private volatile Constructor<D> recordConstructor;
+
   MappingConfiguration(Class<S> source, Class<D> destination) {
     this.source = source;
     this.destination = destination;
@@ -934,19 +941,39 @@ public class MappingConfiguration<S, D> {
     }
 
     // Invoke the canonical constructor
+    Constructor<D> constructor = canonicalRecordConstructor(components);
     try {
-      Class<?>[] paramTypes = new Class<?>[components.length];
       Object[] args = new Object[components.length];
       for (int i = 0; i < components.length; i++) {
-        paramTypes[i] = components[i].getType();
         args[i] = values.get(components[i].getName());
       }
-      Constructor<D> ctor = destination.getDeclaredConstructor(paramTypes);
-      ctor.setAccessible(true);
-      return ctor.newInstance(args);
+      return constructor.newInstance(args);
     } catch (Exception e) {
       throw MappingException.newInstanceFailed(destination, e);
     }
+  }
+
+  /**
+   * Returns the canonical constructor of the record destination type. The constructor is resolved once on the first
+   * mapping, analogous to {@link #createDestination()}.
+   */
+  private Constructor<D> canonicalRecordConstructor(RecordComponent[] components) {
+    Constructor<D> constructor = recordConstructor;
+    if (constructor == null) {
+      // Benign race: concurrent first mappings may resolve the constructor multiple times with the same result.
+      Class<?>[] paramTypes = new Class<?>[components.length];
+      for (int i = 0; i < components.length; i++) {
+        paramTypes[i] = components[i].getType();
+      }
+      try {
+        constructor = destination.getDeclaredConstructor(paramTypes);
+        constructor.setAccessible(true);
+      } catch (Exception e) {
+        throw MappingException.newInstanceFailed(destination, e);
+      }
+      recordConstructor = constructor;
+    }
+    return constructor;
   }
 
   private D createDestination() {
