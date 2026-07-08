@@ -2,20 +2,19 @@ package com.remondis.remap;
 
 import static com.remondis.remap.Properties.getProperties;
 import static com.remondis.remap.Target.DESTINATION;
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.beans.PropertyDescriptor;
 import java.util.Optional;
 import java.util.Set;
 
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import com.remondis.remap.fluent.FluentSetterDto;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public class PropertiesTest {
 
   @Test

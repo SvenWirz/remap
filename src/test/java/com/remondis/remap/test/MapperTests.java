@@ -1,8 +1,9 @@
 package com.remondis.remap.test;
 
 import static org.assertj.core.api.Java6Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
@@ -33,19 +34,19 @@ public class MapperTests {
     assertThat(result.getStringField()).isEqualTo("42");
   }
 
-  @Test(expected = MappingException.class)
+  @Test
   public void failsWithoutEmptyConstructor() {
     // when a bean does not have an empty constructor, mapping should fail
-    Mapping.from(BeanWithConstructors.class)
+    assertThrows(MappingException.class, () -> Mapping.from(BeanWithConstructors.class)
         .to(BeanWithoutEmptyConstructor.class)
-        .mapper();
+        .mapper());
   }
 
-  @Test(expected = MappingException.class)
+  @Test
   public void failsOnUnspecifiedFields() {
-    Mapping.from(BeanWithConstructors.class)
+    assertThrows(MappingException.class, () -> Mapping.from(BeanWithConstructors.class)
         .to(Person.class)
-        .mapper();
+        .mapper());
   }
 
   @Test
@@ -85,11 +86,11 @@ public class MapperTests {
     assertThat(person.getName()).isEqualTo("Bob");
   }
 
-  @Test(expected = MappingException.class)
+  @Test
   public void failsOnMissingNestedMapper() {
-    Mapping.from(PersonWithAddress.class)
+    assertThrows(MappingException.class, () -> Mapping.from(PersonWithAddress.class)
         .to(HumanWithAddress.class)
-        .mapper();
+        .mapper());
   }
 
   @Test

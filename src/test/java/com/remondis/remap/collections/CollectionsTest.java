@@ -1,10 +1,11 @@
 package com.remondis.remap.collections;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
@@ -19,11 +20,11 @@ public class CollectionsTest {
    * collection mapping while the mapper for the specified list elements was
    * missing.
    */
-  @Test(expected = MappingException.class)
+  @Test
   public void shouldCheckForRequiredMappers() {
-    Mapping.from(A.class)
+    assertThrows(MappingException.class, () -> Mapping.from(A.class)
         .to(AResource.class)
-        .mapper();
+        .mapper());
   }
 
   @Test

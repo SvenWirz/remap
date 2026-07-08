@@ -2,7 +2,7 @@ package com.remondis.remap.basic;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.remondis.remap.AssertConfiguration;
 import com.remondis.remap.AssertMapping;
@@ -341,7 +341,7 @@ public class AssertMappingTest {
 
   }
 
-  @Test(expected = AssertionError.class)
+  @Test
   public void shouldDetectExpectedNoSkipWhenNull() {
 
     Mapper<B, BResource> bMapper = Mapping.from(B.class)
@@ -365,10 +365,10 @@ public class AssertMappingTest {
         .andTest(String::valueOf)
         .expectOmitInSource(A::getOmitted)
         .expectOmitInDestination(AResource::getOmitted);
-    asserts.ensure();
+    assertThatThrownBy(asserts::ensure).isInstanceOf(AssertionError.class);
   }
 
-  @Test(expected = AssertionError.class)
+  @Test
   public void shouldDetectExpectedSkipWhenNull() {
 
     Mapper<B, BResource> bMapper = Mapping.from(B.class)
@@ -392,7 +392,7 @@ public class AssertMappingTest {
         .andSkipWhenNull()
         .expectOmitInSource(A::getOmitted)
         .expectOmitInDestination(AResource::getOmitted);
-    asserts.ensure();
+    assertThatThrownBy(asserts::ensure).isInstanceOf(AssertionError.class);
   }
 
   @Test

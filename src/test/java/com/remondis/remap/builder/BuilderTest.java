@@ -1,8 +1,9 @@
 package com.remondis.remap.builder;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.remondis.remap.AssertMapping;
 import com.remondis.remap.Mapper;
@@ -33,10 +34,10 @@ public class BuilderTest {
         .ensure();
   }
 
-  @Test(expected = MappingException.class)
+  @Test
   public void failsWhenMapFromBuilder() {
-    Mapping.from(DestinationModel.class)
+    assertThrows(MappingException.class, () -> Mapping.from(DestinationModel.class)
         .to(BuilderModel.class)
-        .mapper();
+        .mapper());
   }
 }
