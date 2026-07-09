@@ -6,8 +6,6 @@ import static net.bytebuddy.matcher.ElementMatchers.isDeclaredBy;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.method.MethodDescription;
@@ -23,41 +21,52 @@ import net.bytebuddy.matcher.ElementMatcher;
  */
 public class InvocationSensor<T> {
 
-  static Map<Class<?>, InterceptionHandler<?>> interceptionHandlerCache = new ConcurrentHashMap<>();
+  /**
+   * Associates the interception handler (and thereby the generated proxy) with the sensed type. In contrast to a
+   * static map keyed by the class, a {@link ClassValue} does not prevent garbage collection of the sensed type: the
+   * handler, the generated proxy class and the sensed type form a reference cycle within the type's class loader that
+   * is collected as a whole once the class loader becomes unreachable. A strongly referencing static cache caused a
+   * class loader leak in container environments with redeploy cycles.
+   */
+  private static final ClassValue<InterceptionHandler<?>> INTERCEPTION_HANDLER_CACHE = new ClassValue<InterceptionHandler<?>>() {
+    @Override
+    protected InterceptionHandler<?> computeValue(Class<?> superType) {
+      return createInterceptionHandler(superType);
+    }
+  };
 
   private InterceptionHandler<T> interceptionHandler;
 
   /**
-   * Creates a proxy for the given class type.
+   * Creates a proxy for the given class type. The proxy is created once per type and cached for the lifetime of the
+   * type.
    *
    * @param superType the class type for which the proxy should be created
    */
+  @SuppressWarnings("unchecked")
   public InvocationSensor(Class<T> superType) {
+    this.interceptionHandler = (InterceptionHandler<T>) INTERCEPTION_HANDLER_CACHE.get(superType);
+  }
+
+  private static <T> InterceptionHandler<T> createInterceptionHandler(Class<T> superType) {
     ClassLoader classLoader;
-    if (isNull(superType) || isNull(superType.getClassLoader())) {
+    if (isNull(superType.getClassLoader())) {
       classLoader = getSystemClassLoader();
     } else {
       classLoader = superType.getClassLoader();
     }
     try {
-      if (interceptionHandlerCache.containsKey(superType)) {
-        this.interceptionHandler = (InterceptionHandler<T>) interceptionHandlerCache.get(superType);
-      } else {
-        InterceptionHandler<T> interceptionHandler = new InterceptionHandler<>();
-        T po = null;
-        po = new ByteBuddy().subclass(superType)
-            .method(isDeclaredByClassHierarchy(superType))
-            .intercept(MethodDelegation.to(interceptionHandler))
-            .make()
-            .load(classLoader, ClassLoadingStrategy.Default.INJECTION)
-            .getLoaded()
-            .getDeclaredConstructor()
-            .newInstance();
-        interceptionHandler.setProxyObject(po);
-        interceptionHandlerCache.put(superType, interceptionHandler);
-        this.interceptionHandler = interceptionHandler;
-      }
-
+      InterceptionHandler<T> interceptionHandler = new InterceptionHandler<>();
+      T po = new ByteBuddy().subclass(superType)
+          .method(isDeclaredByClassHierarchy(superType))
+          .intercept(MethodDelegation.to(interceptionHandler))
+          .make()
+          .load(classLoader, ClassLoadingStrategy.Default.INJECTION)
+          .getLoaded()
+          .getDeclaredConstructor()
+          .newInstance();
+      interceptionHandler.setProxyObject(po);
+      return interceptionHandler;
     } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException ex) {
       throw new MappingException(
           String.format("Error while creating proxy for class '%s'", superType.getCanonicalName()), ex);
@@ -71,7 +80,7 @@ public class InvocationSensor<T> {
    * @param type type to get the junction for
    * @return the junction with all superclasses and interfaces including the given typeD
    */
-  private ElementMatcher.Junction<MethodDescription> isDeclaredByClassHierarchy(Class<T> type) {
+  private static <T> ElementMatcher.Junction<MethodDescription> isDeclaredByClassHierarchy(Class<T> type) {
     ClassHierarchyIterator classHierarchyIterator = new ClassHierarchyIterator(type);
     ElementMatcher.Junction<MethodDescription> methodDescriptionJunction = null;
     while (classHierarchyIterator.hasNext()) {
