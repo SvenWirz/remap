@@ -4,6 +4,7 @@ import static java.lang.ClassLoader.getSystemClassLoader;
 import static java.util.Objects.isNull;
 import static net.bytebuddy.matcher.ElementMatchers.isDeclaredBy;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
@@ -61,7 +62,7 @@ public class InvocationSensor<T> {
           .method(isDeclaredByClassHierarchy(superType))
           .intercept(MethodDelegation.to(interceptionHandler))
           .make()
-          .load(classLoader, ClassLoadingStrategy.Default.INJECTION)
+          .load(classLoader, classLoadingStrategy(superType))
           .getLoaded()
           .getDeclaredConstructor()
           .newInstance();
@@ -70,6 +71,22 @@ public class InvocationSensor<T> {
     } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException ex) {
       throw new MappingException(
           String.format("Error while creating proxy for class '%s'", superType.getCanonicalName()), ex);
+    }
+  }
+
+  /**
+   * Returns the class loading strategy for the proxy class. The proxy is defined via a {@link MethodHandles.Lookup},
+   * which is the supported way to define classes since Java 9. The formerly used
+   * {@link ClassLoadingStrategy.Default#INJECTION} relies on JDK internals and required
+   * <code>--add-opens java.base/java.lang=ALL-UNNAMED</code> on current JDKs. If the sensed type's package is not
+   * accessible (e.g. a type of a named module that does not open its package to ReMap), the proxy is loaded into a
+   * wrapper class loader instead.
+   */
+  private static ClassLoadingStrategy<ClassLoader> classLoadingStrategy(Class<?> superType) {
+    try {
+      return ClassLoadingStrategy.UsingLookup.of(MethodHandles.privateLookupIn(superType, MethodHandles.lookup()));
+    } catch (IllegalAccessException | SecurityException e) {
+      return ClassLoadingStrategy.Default.WRAPPER;
     }
   }
 

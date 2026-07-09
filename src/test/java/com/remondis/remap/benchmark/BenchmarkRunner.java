@@ -28,7 +28,6 @@ public class BenchmarkRunner {
 
   public static void main(String[] args) throws RunnerException {
     Options options = new OptionsBuilder().include(args.length > 0 ? args[0] : MappingBenchmark.class.getSimpleName())
-        .jvmArgsAppend("--add-opens", "java.base/java.lang=ALL-UNNAMED")
         .resultFormat(ResultFormatType.JSON)
         .result("target/jmh-result.json")
         .build();
