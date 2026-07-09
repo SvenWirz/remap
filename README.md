@@ -769,6 +769,35 @@ This workaround was tested and should work for most cases. Please file an issue 
 
 # Migration guide
 
+## Sidenote for 4.4.5
+Version 4.4.5
+Bug Fixes and JVM Compatibility Improvements
+
+Version 4.4.5 focuses on improving memory management, robustness, and compatibility with modern Java runtimes. The changes are fully backward compatible and validated by the complete test suite.
+
+Highlights:
+
+Fixed class loader leaks in InvocationSensor
+The internal proxy cache has been migrated from a static ConcurrentHashMap to ClassValue.
+Previously, the cache could keep strong references to sensed types, generated proxy classes, and handlers for the lifetime of the JVM, preventing class loader garbage collection in container environments with redeploy cycles.
+ClassValue now allows the JVM to clean up all associated data together with the corresponding class loader and also guarantees consistent proxy creation under concurrent access.
+Improved invocation tracking cleanup
+Selector evaluation state is now reset defensively before and after each property selector execution.
+This prevents stale tracked properties from leaking into subsequent evaluations after a selector throws an exception.
+Fixed cases where subsequent mappings could fail with incorrect "multiple interactions" MappingExceptions or select the wrong property.
+Removed dependency on JDK internal APIs for proxy generation
+Invocation sensor proxies are now created using the supported Java 9+ MethodHandles.privateLookupIn(...) API together with ClassLoadingStrategy.UsingLookup.
+The previous implementation relied on JDK internals and required --add-opens java.base/java.lang=ALL-UNNAMED, which is no longer needed.
+The full test suite now runs without additional JVM flags, improving compatibility with modern JDKs and modular applications.
+Additional Improvements
+Proxy generation now works correctly for:
+Package-private classes by defining proxies in the target package.
+Beans loaded through disposable class loaders while keeping those class loaders garbage collectable.
+Added regression coverage for:
+Class loader leak prevention.
+Stale invocation tracking after failed selector evaluation.
+Proxy generation with different visibility and class loading scenarios.
+
 ## Sidenote for 4.4.4
 
 Performance Improvements
