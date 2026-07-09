@@ -8,7 +8,6 @@ import static com.remondis.remap.Properties.getPropertyClass;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
@@ -154,31 +153,12 @@ public class MappingException extends RuntimeException {
     return new MappingException(String.format("Creating a new instance of type %s failed.", type.getName()), e);
   }
 
-  static MappingException unsupportedCollection(Collection<?> collection) {
-    return new MappingException(String.format(
-        "The collection '%s' is currently not supported. Only java.util.Set and java.util.List"
-            + " are supported collections.",
-        collection.getClass()
-            .getName()));
-  }
-
   static MappingException denyMappingOfNull() {
     return new MappingException("Mapper cannot map null object.");
   }
 
   static MappingException unsupportedCollection(Class<?> collectionType) {
     return new MappingException(String.format("The collection type %s is unsupported.", collectionType.getName()));
-  }
-
-  static MappingException nullElementInCollection(PropertyDescriptor sourceProperty,
-      PropertyDescriptor destinationProperty) {
-    Class<?> sourceDeclaringClass = sourceProperty.getReadMethod()
-        .getDeclaringClass();
-    Class<?> destDeclaringClass = destinationProperty.getReadMethod()
-        .getDeclaringClass();
-    return new MappingException(String.format(
-        "Cannot map null element in collection field '%s' from source type '%s' to destination type '%s'.",
-        sourceProperty.getName(), sourceDeclaringClass.getSimpleName(), destDeclaringClass.getSimpleName()));
   }
 
   static MappingException incompatibleCollectionMapping(PropertyDescriptor sourceProperty,

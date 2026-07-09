@@ -2,15 +2,19 @@ package com.remondis.remap.collections;
 
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
-import com.remondis.remap.MappingException;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * A collection containing a <code>null</code> element is normal, valid data (e.g. a sparse list) and must not cause
+ * the mapper to throw: <code>null</code> elements are passed through as <code>null</code> in the destination
+ * collection, just like a <code>null</code> value would be for a non-collection field.
+ */
 class NullInCollectionMappingTest {
 
   static class Source {
@@ -48,9 +52,21 @@ class NullInCollectionMappingTest {
 
     Source source = new Source(singletonList(null));
 
-    MappingException exception = assertThrows(MappingException.class, () -> mapper.map(source));
+    Destination destination = mapper.map(source);
 
-    String expectedMessage = "Cannot map null element in collection field 'stringList' from source type 'Source' to destination type 'Destination'.";
-    assertEquals(expectedMessage, exception.getMessage(), "Unerwartete Exception-Nachricht");
+    assertThat(destination.getStringList()).containsExactly((String) null);
+  }
+
+  @Test
+  void testMappingWithNullAmongOtherElements() {
+    Mapper<Source, Destination> mapper = Mapping.from(Source.class)
+        .to(Destination.class)
+        .mapper();
+
+    Source source = new Source(Arrays.asList("a", null, "b"));
+
+    Destination destination = mapper.map(source);
+
+    assertThat(destination.getStringList()).containsExactly("a", null, "b");
   }
 }
