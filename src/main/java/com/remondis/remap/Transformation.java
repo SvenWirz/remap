@@ -19,6 +19,15 @@ abstract class Transformation {
   protected PropertyDescriptor destinationProperty;
   protected MappingConfiguration<?, ?> mapping;
 
+  /*
+   * The accessible read/write methods are resolved once at configuration time because setAccessible is expensive and
+   * must not be called for every mapping operation. The Method instances are cached here since PropertyDescriptor
+   * holds them softly-referenced and may return fresh instances without the accessible flag set.
+   */
+  private final Method sourceReadMethod;
+  private final Method destinationReadMethod;
+  private final Method destinationWriteMethod;
+
   Transformation(MappingConfiguration<?, ?> mapping, PropertyDescriptor sourceProperty,
       PropertyDescriptor destinationProperty) {
     super();
@@ -26,6 +35,57 @@ abstract class Transformation {
     this.mapping = mapping;
     this.sourceProperty = sourceProperty;
     this.destinationProperty = destinationProperty;
+    this.sourceReadMethod = accessibleOrNull(sourceProperty == null ? null : sourceProperty.getReadMethod());
+    this.destinationReadMethod = accessibleOrNull(
+        destinationProperty == null ? null : destinationProperty.getReadMethod());
+    this.destinationWriteMethod = accessibleOrNull(
+        destinationProperty == null ? null : destinationProperty.getWriteMethod());
+  }
+
+  /**
+   * Makes the specified method accessible on a best-effort basis. If the method cannot be made accessible, the
+   * original method is returned and the access error surfaces on invocation like before.
+   */
+  private static Method accessibleOrNull(Method method) {
+    if (method == null) {
+      return null;
+    }
+    try {
+      method.setAccessible(true);
+    } catch (RuntimeException e) {
+      // Ignore here: invoking the inaccessible method throws an IllegalAccessException which is reported as
+      // MappingException by readOrFail/writeOrFail.
+    }
+    return method;
+  }
+
+  /**
+   * Returns the cached accessible read method for the specified property. Falls back to resolving the method from the
+   * property descriptor if an unknown descriptor is passed.
+   */
+  private Method readMethodOf(PropertyDescriptor property) {
+    if (property == sourceProperty && sourceReadMethod != null) {
+      return sourceReadMethod;
+    }
+    if (property == destinationProperty && destinationReadMethod != null) {
+      return destinationReadMethod;
+    }
+    Method readMethod = property.getReadMethod();
+    readMethod.setAccessible(true);
+    return readMethod;
+  }
+
+  /**
+   * Returns the cached accessible write method for the specified property. Falls back to resolving the method from
+   * the property descriptor if an unknown descriptor is passed.
+   */
+  private Method writeMethodOf(PropertyDescriptor property) {
+    if (property == destinationProperty && destinationWriteMethod != null) {
+      return destinationWriteMethod;
+    }
+    Method writeMethod = property.getWriteMethod();
+    writeMethod.setAccessible(true);
+    return writeMethod;
   }
 
   /**
@@ -53,9 +113,7 @@ abstract class Transformation {
 
   protected Object readOrFail(PropertyDescriptor property, Object source) {
     try {
-      Method readMethod = property.getReadMethod();
-      readMethod.setAccessible(true);
-      return readMethod.invoke(source);
+      return readMethodOf(property).invoke(source);
     } catch (InvocationTargetException e) {
       throw MappingException.invocationTarget(property, e);
     } catch (Exception e) {
@@ -65,9 +123,7 @@ abstract class Transformation {
 
   protected void writeOrFail(PropertyDescriptor property, Object source, Object value) {
     try {
-      Method writeMethod = property.getWriteMethod();
-      writeMethod.setAccessible(true);
-      writeMethod.invoke(source, value);
+      writeMethodOf(property).invoke(source, value);
     } catch (InvocationTargetException e) {
       throw MappingException.invocationTarget(property, e);
     } catch (Exception e) {
@@ -129,6 +185,19 @@ abstract class Transformation {
    */
   <S, T> InternalMapper<S, T> getMapperFor(Class<S> sourceType, Class<T> destinationType) {
     return this.mapping.getMapperFor(getSourceProperty(), sourceType, getDestinationProperty(), destinationType);
+  }
+
+  /**
+   * Returns a mapper to map the specified source type to the specified destination type or <code>null</code> if no
+   * mapper was registered. In contrast to a {@link #hasMapperFor(Class, Class)}/{@link #getMapperFor(Class, Class)}
+   * combination this requires only a single registry lookup.
+   *
+   * @param sourceType The source type
+   * @param destinationType The destination type
+   * @return Returns the registered mapper or <code>null</code>.
+   */
+  <S, T> InternalMapper<S, T> getMapperForOrNull(Class<S> sourceType, Class<T> destinationType) {
+    return this.mapping.getMapperOrNull(sourceType, destinationType);
   }
 
   /**

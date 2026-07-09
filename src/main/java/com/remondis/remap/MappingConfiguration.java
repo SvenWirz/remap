@@ -10,10 +10,11 @@ import static com.remondis.remap.ReflectionUtil.newInstance;
 import static java.util.Objects.nonNull;
 
 import java.beans.PropertyDescriptor;
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -108,13 +109,25 @@ public class MappingConfiguration<S, D> {
 
   private InvocationSensor<?> destinationInvocationSensor;
 
+  /**
+   * Caches the default constructor of the destination type. The constructor is resolved on the first mapping to avoid
+   * the reflective lookup for every mapped object. Volatile for safe publication when the mapper is shared between
+   * threads.
+   */
+  private volatile Constructor<D> destinationConstructor;
+
   MappingConfiguration(Class<S> source, Class<D> destination) {
     this.source = source;
     this.destination = destination;
     this.mappings = new HashSet<>();
     this.mappedSourceProperties = new HashSet<>();
     this.mappedDestinationProperties = new HashSet<>();
-    this.mappers = new Hashtable<>();
+    /*
+     * A plain HashMap is sufficient here: the registry is populated during configuration and is only read while
+     * mapping. The former Hashtable synchronized every lookup which caused lock contention when a mapper was shared
+     * between threads.
+     */
+    this.mappers = new HashMap<>();
   }
 
   private InvocationSensor<?> getSourceInvocationSensor() {
@@ -732,15 +745,27 @@ public class MappingConfiguration<S, D> {
    * @param destinationType The destination type
    * @return Returns the registered mapper.
    */
-  @SuppressWarnings("unchecked")
   <S1, D1> InternalMapper<S1, D1> getMapperFor(PropertyDescriptor sourceProperty, Class<S1> sourceType,
       PropertyDescriptor destinationProperty, Class<D1> destinationType) {
-    Projection<?, ?> projection = new Projection<>(sourceType, destinationType);
-    if (mappers.containsKey(projection)) {
-      return (InternalMapper<S1, D1>) mappers.get(projection);
-    } else {
+    InternalMapper<S1, D1> mapper = getMapperOrNull(sourceType, destinationType);
+    if (mapper == null) {
       throw MappingException.noMapperFound(sourceProperty, sourceType, destinationProperty, destinationType);
     }
+    return mapper;
+  }
+
+  /**
+   * Returns a registered mapper for hierarchical mapping or <code>null</code> if no mapper was registered for the
+   * specified conversion. In contrast to a {@link #hasMapperFor(Class, Class)}/getMapperFor combination this requires
+   * only a single registry lookup.
+   *
+   * @param sourceType The source type
+   * @param destinationType The destination type
+   * @return Returns the registered mapper or <code>null</code>.
+   */
+  @SuppressWarnings("unchecked")
+  <S1, D1> InternalMapper<S1, D1> getMapperOrNull(Class<S1> sourceType, Class<D1> destinationType) {
+    return (InternalMapper<S1, D1>) mappers.get(new Projection<>(sourceType, destinationType));
   }
 
   /**
@@ -790,7 +815,13 @@ public class MappingConfiguration<S, D> {
   }
 
   private D createDestination() {
-    return newInstance(destination);
+    Constructor<D> constructor = destinationConstructor;
+    if (constructor == null) {
+      // Benign race: concurrent first mappings may resolve the constructor multiple times with the same result.
+      constructor = ReflectionUtil.defaultConstructor(destination);
+      destinationConstructor = constructor;
+    }
+    return newInstance(constructor);
   }
 
   Class<S> getSource() {
@@ -848,7 +879,7 @@ public class MappingConfiguration<S, D> {
    * @return Returns the registered {@link Mapper}s.
    */
   protected Map<Projection<?, ?>, InternalMapper<?, ?>> getMappers() {
-    return new Hashtable<>(this.mappers);
+    return new HashMap<>(this.mappers);
   }
 
   public boolean isWriteNull() {

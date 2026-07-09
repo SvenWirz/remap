@@ -24,9 +24,20 @@ public class ReassignTransformation extends Transformation {
 
   private static final String REASSIGNING_MSG = "Reassigning %s\n           to %s";
 
+  /*
+   * The generic parameter contexts describe the static generic type structure of the source and destination property
+   * and are therefore resolved once at configuration time instead of for every mapping operation.
+   * GenericParameterContext is effectively immutable after construction - goInto() returns new instances - so the
+   * cached contexts can be shared by concurrent mapping operations.
+   */
+  private final GenericParameterContext sourceContext;
+  private final GenericParameterContext destinationContext;
+
   ReassignTransformation(MappingConfiguration<?, ?> mapping, PropertyDescriptor sourceProperty,
       PropertyDescriptor destinationProperty) {
     super(mapping, sourceProperty, destinationProperty);
+    this.sourceContext = new GenericParameterContext(sourceProperty.getReadMethod());
+    this.destinationContext = new GenericParameterContext(destinationProperty.getReadMethod());
   }
 
   protected static boolean isEqualTypes(Class<?> sourceType, Class<?> destinationType) {
@@ -55,11 +66,8 @@ public class ReassignTransformation extends Transformation {
 
   @Override
   protected MappedResult performValueTransformation(Object source, Object destination) throws MappingException {
-    Object destinationValue;
-    GenericParameterContext sourceCtx = new GenericParameterContext(sourceProperty.getReadMethod());
-    GenericParameterContext destinationCtx = new GenericParameterContext(destinationProperty.getReadMethod());
-    destinationValue = _convert(sourceCtx.getCurrentType(), source, destinationCtx.getCurrentType(), destination,
-        sourceCtx, destinationCtx);
+    Object destinationValue = _convert(sourceContext.getCurrentType(), source, destinationContext.getCurrentType(),
+        destination, sourceContext, destinationContext);
     return MappedResult.value(destinationValue);
   }
 
@@ -68,8 +76,8 @@ public class ReassignTransformation extends Transformation {
   })
   private Object _convert(Class<?> sourceType, Object sourceValue, Class<?> destinationType, Object destination,
       GenericParameterContext sourceCtx, GenericParameterContext destinationCtx) {
-    if (hasMapperFor(sourceType, destinationType)) {
-      InternalMapper mapper = getMapperFor(sourceType, destinationType);
+    InternalMapper mapper = getMapperForOrNull(sourceType, destinationType);
+    if (mapper != null) {
       return mapper.map(sourceValue, null);
     } else if (isMap(sourceValue)) {
       return convertMap(sourceValue, sourceCtx, destinationCtx);
@@ -88,16 +96,18 @@ public class ReassignTransformation extends Transformation {
     Class<?> destinationCollectionType = destinationCtx.getCurrentType();
     Collection collection = (Collection) sourceValue;
     Collector collector = getCollector(destinationCollectionType);
+    // The element types are the same for all elements, so the contexts are resolved once per collection instead of
+    // once per element.
+    GenericParameterContext elementSourceCtx = sourceCtx.goInto(0);
+    Class<?> sourceElementType = elementSourceCtx.getCurrentType();
+    GenericParameterContext elementDestCtx = destinationCtx.goInto(0);
+    Class<?> destinationElementType = elementDestCtx.getCurrentType();
     return collection.stream()
         .map(o -> {
           if (o == null) {
             throw MappingException.nullElementInCollection(this.sourceProperty, this.destinationProperty);
           }
-          GenericParameterContext newSourceCtx = sourceCtx.goInto(0);
-          Class<?> sourceElementType = newSourceCtx.getCurrentType();
-          GenericParameterContext newDestCtx = destinationCtx.goInto(0);
-          Class<?> destinationElementType = newDestCtx.getCurrentType();
-          return _convert(sourceElementType, o, destinationElementType, null, newSourceCtx, newDestCtx);
+          return _convert(sourceElementType, o, destinationElementType, null, elementSourceCtx, elementDestCtx);
         })
         .collect(collector);
   }
@@ -196,12 +206,7 @@ public class ReassignTransformation extends Transformation {
   protected void validateTransformation() throws MappingException {
     // we have to check that all required mappers are known for nested mapping
     // if this transformation performs an object mapping, check for known mappers
-
-    GenericParameterContext sourceCtx = new GenericParameterContext(getSourceProperty().getReadMethod());
-    GenericParameterContext destCtx = new GenericParameterContext(getDestinationProperty().getReadMethod());
-
-    _validateTransformation(sourceCtx, destCtx);
-
+    _validateTransformation(sourceContext, destinationContext);
   }
 
   private void _validateTransformation(GenericParameterContext sourceCtx, GenericParameterContext destCtx) {
