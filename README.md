@@ -769,6 +769,39 @@ This workaround was tested and should work for most cases. Please file an issue 
 
 # Migration guide
 
+## Sidenote for 4.4.4
+
+Performance Improvements
+
+Version 4.4.4 introduces several internal performance optimizations focused on the mapping pipeline. These changes are fully backward compatible and do not change the library's behavior. All optimizations have been validated against the existing test suite.
+
+Highlights:
+
+Reflection access is resolved once
+Getter, setter, and constructor references are resolved during mapper configuration and reused during mapping.
+Repeated setAccessible(...) calls and constructor lookups have been eliminated from the hot path.
+Generic type contexts are precomputed
+Generic type resolution is performed once during initialization and once per collection instead of once per mapped value or collection element.
+This significantly reduces overhead when mapping nested generic structures.
+Optimized mapper registry
+The internal registry now uses a HashMap instead of a synchronized Hashtable.
+Registry access has been reduced to a single lookup, eliminating unnecessary synchronization and duplicate lookups.
+Pre-resolved conversion strategies
+Conversion strategies are determined during mapper validation rather than at runtime.
+Mapping now executes pre-bound strategies directly, avoiding repeated registry lookups, type checks, and temporary object allocations.
+Performance
+
+Depending on the mapping scenario, execution times have been reduced significantly:
+
+Benchmark	Improvement
+Flat bean mapping	up to 76% faster
+Nested bean mapping	up to 64% faster
+Concurrent mapping	up to 85% faster
+Collections (10 elements)	up to 78% faster
+Collections (1000 elements)	up to 87% faster
+
+These optimizations particularly improve throughput for shared mappers in multi-threaded applications, where concurrent performance now scales almost linearly with the number of threads. Mapper creation performance remains essentially unchanged, as the optimizations exclusively target the mapping execution path.
+
 ## Sidenote for 4.4.3
 Fixed an issue where interface properties without a corresponding setter were incorrectly added back to the target property set during mapper creation.
 
