@@ -9,6 +9,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 
@@ -91,6 +92,29 @@ public class MappingException extends RuntimeException {
   static MappingException duplicateMapper(Class<?> source, Class<?> destination) {
     return new MappingException(String.format("A mapper mapping the type %s to type %s was already registered.",
         source.getName(), destination.getName()));
+  }
+
+  static MappingException cyclicMapperConfiguration(Projection<?, ?> projection, Deque<Projection<?, ?>> buildStack) {
+    StringBuilder chain = new StringBuilder();
+    buildStack.descendingIterator()
+        .forEachRemaining(p -> chain.append("\t")
+            .append(p.getSource()
+                .getSimpleName())
+            .append(" -> ")
+            .append(p.getDestination()
+                .getSimpleName())
+            .append("\n"));
+    return new MappingException(String.format(
+        "Detected a cyclic mapper configuration while building the mapper from %s to %s: this projection is "
+            + "already being configured further up the restructuring chain:\n%s"
+            + "Self-referential or cyclic types (e.g. tree or linked structures) cannot be mapped with a single, "
+            + "implicitly recursive restructure() configuration. Define a dedicated Mapper for the recurring type "
+            + "using useMapper() instead.",
+        projection.getSource()
+            .getName(),
+        projection.getDestination()
+            .getName(),
+        chain));
   }
 
   static MappingException incompatiblePropertyTypes(Transformation t, PropertyDescriptor sourceProperty,
