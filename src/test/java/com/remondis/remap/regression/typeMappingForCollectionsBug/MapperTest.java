@@ -14,7 +14,7 @@ import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 import com.remondis.remap.TypeMapping;
 
-public class MapperTest {
+class MapperTest {
 
   @Test
   @SuppressWarnings("unchecked")
@@ -37,7 +37,7 @@ public class MapperTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void shouldUseReplaceCollectionInsteadOfTypeMapping() {
+  void shouldUseReplaceCollectionInsteadOfTypeMapping() {
     Mapper<A, B> mapper = Mapping.from(A.class)
         .to(B.class)
         .useMapper(TypeMapping.from(List.class)
@@ -56,7 +56,7 @@ public class MapperTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void shouldUseReplaceInsteadOfTypeMapping() {
+  void shouldUseReplaceInsteadOfTypeMapping() {
     final Set<String> expected = new HashSet<>();
     expected.add("Z");
 

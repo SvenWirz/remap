@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class MapperTest {
+class MapperTest {
 
   private static final String STRING = "aString";
 
   @Test
-  public void shouldSupportInterfaces() {
+  void shouldSupportInterfaces() {
     Mapper<Source, DestImpl> mapper = Mapping.from(Source.class)
         .to(DestImpl.class)
         .reassign(Source::getString)

@@ -13,10 +13,10 @@ import com.remondis.remap.Mapping;
 import com.remondis.remap.MappingConfiguration;
 import com.remondis.remap.MappingException;
 
-public class ChainedSetterTest {
+class ChainedSetterTest {
 
   @Test
-  public void testChainedSetter() {
+  void testChainedSetter() {
     Mapper<FluentSetterDto, FluentSetterDto> m = Mapping.from(FluentSetterDto.class)
         .to(FluentSetterDto.class)
         .allowFluentSetters()
@@ -31,7 +31,7 @@ public class ChainedSetterTest {
   }
 
   @Test
-  public void shouldComplainAboutEnabledFluentSetters() {
+  void shouldComplainAboutEnabledFluentSetters() {
     Mapper<FluentSetterDto, FluentSetterDto> mapper = Mapping.from(FluentSetterDto.class)
         .to(FluentSetterDto.class)
         .allowFluentSetters()
@@ -47,7 +47,7 @@ public class ChainedSetterTest {
   }
 
   @Test
-  public void shouldComplainAboutDisabledFluentSetters() {
+  void shouldComplainAboutDisabledFluentSetters() {
     Mapper<FluentSetterDto, FluentSetterDto> mapper = Mapping.from(FluentSetterDto.class)
         .to(FluentSetterDto.class)
         .omitOthers()
@@ -65,7 +65,7 @@ public class ChainedSetterTest {
   }
 
   @Test
-  public void shouldTestTheMapperWithoutErrors() {
+  void shouldTestTheMapperWithoutErrors() {
     Mapper<FluentSetterDto, FluentSetterDto> mapper = Mapping.from(FluentSetterDto.class)
         .to(FluentSetterDto.class)
         .omitOthers()
@@ -77,14 +77,14 @@ public class ChainedSetterTest {
   }
 
   @Test
-  public void shouldComplainAboutUnmappedProperties_dueToFluentSettersDisabled() {
+  void shouldComplainAboutUnmappedProperties_dueToFluentSettersDisabled() {
     assertThrows(MappingException.class, () -> Mapping.from(FluentSetterDto.class)
         .to(FluentSetterDto.class)
         .mapper());
   }
 
   @Test
-  public void shouldNotComplainAboutMissingMappings_ifFluentSettersEnabled() {
+  void shouldNotComplainAboutMissingMappings_ifFluentSettersEnabled() {
     Mapping.from(FluentSetterDto.class)
         .to(FluentSetterDto.class)
         .allowFluentSetters()
@@ -92,7 +92,7 @@ public class ChainedSetterTest {
   }
 
   @Test
-  public void fluentSettersShouldBeDisabledByDefault_backwardsCompatibility() {
+  void fluentSettersShouldBeDisabledByDefault_backwardsCompatibility() {
     MappingConfiguration<FluentSetterDto, FluentSetterDto> mappingConfiguration = Mapping.from(FluentSetterDto.class)
         .to(FluentSetterDto.class);
     assertFalse(mappingConfiguration.isFluentSettersAllowed());

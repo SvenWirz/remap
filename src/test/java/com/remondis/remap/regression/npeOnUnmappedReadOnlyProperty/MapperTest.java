@@ -6,9 +6,9 @@ import org.junit.jupiter.api.Test;
 
 import com.remondis.remap.Mapping;
 
-public class MapperTest {
+class MapperTest {
   @Test
-  public void test() {
+  void test() {
     assertThatThrownBy(() -> {
       Mapping.from(A.class)
           .to(B.class)

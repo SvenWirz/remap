@@ -15,12 +15,12 @@ import com.remondis.remap.AssertMapping;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class NoImplicitMappingsTest {
+class NoImplicitMappingsTest {
 
   private Mapper<B, B> bMapper;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     this.bMapper = Mapping.from(B.class)
         .to(B.class)
         .mapper();
@@ -44,7 +44,7 @@ public class NoImplicitMappingsTest {
   }
 
   @Test
-  public void shouldMapRight() {
+  void shouldMapRight() {
     int expectedBInt = 42;
     String expectedBString = "string";
     B b = new B(expectedBString, expectedBInt);
@@ -61,7 +61,7 @@ public class NoImplicitMappingsTest {
   }
 
   @Test
-  public void shouldAssertHappyPath() {
+  void shouldAssertHappyPath() {
     AssertMapping.of(getAMapper())
         .expectNoImplicitMappings()
         .expectReassign(A::getBs)
@@ -76,7 +76,7 @@ public class NoImplicitMappingsTest {
   }
 
   @Test
-  public void shouldComplainAboutDifferentImplicitMappingStrategy_expectImplicit() {
+  void shouldComplainAboutDifferentImplicitMappingStrategy_expectImplicit() {
     assertThatThrownBy(() -> AssertMapping.of(getAMapper())
         .expectReassign(A::getBs)
         .to(A::getBs)
@@ -91,7 +91,7 @@ public class NoImplicitMappingsTest {
   }
 
   @Test
-  public void shouldComplainAboutDifferentImplicitMappingStrategy_expectNoImplicit() {
+  void shouldComplainAboutDifferentImplicitMappingStrategy_expectNoImplicit() {
     Mapper<A, A> implicitMapper = Mapping.from(A.class)
         .to(A.class)
         .useMapper(bMapper)

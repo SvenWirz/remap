@@ -13,7 +13,7 @@ import com.remondis.remap.MappingException;
 import com.remondis.remap.basic.B;
 import com.remondis.remap.basic.BResource;
 
-public class CollectionsTest {
+class CollectionsTest {
 
   /**
    * There was a bug in collection mappings. It was possible to declare a
@@ -21,14 +21,14 @@ public class CollectionsTest {
    * missing.
    */
   @Test
-  public void shouldCheckForRequiredMappers() {
+  void shouldCheckForRequiredMappers() {
     assertThrows(MappingException.class, () -> Mapping.from(A.class)
         .to(AResource.class)
         .mapper());
   }
 
   @Test
-  public void shouldMapNestedCollections() {
+  void shouldMapNestedCollections() {
 
     Mapper<B, BResource> bMapper = Mapping.from(B.class)
         .to(BResource.class)
@@ -76,7 +76,7 @@ public class CollectionsTest {
   }
 
   @Test
-  public void shouldMapCollections() {
+  void shouldMapCollections() {
 
     Mapper<B, BResource> bMapper = Mapping.from(B.class)
         .to(BResource.class)

@@ -9,10 +9,10 @@ import java.util.concurrent.Semaphore;
 
 import org.junit.jupiter.api.Test;
 
-public class InvocationSensorTest {
+class InvocationSensorTest {
 
   @Test
-  public void shouldCacheThreadSafe() {
+  void shouldCacheThreadSafe() {
 
     Semaphore s1 = new Semaphore(1);
     s1.acquireUninterruptibly();
@@ -42,7 +42,7 @@ public class InvocationSensorTest {
   }
 
   @Test
-  public void shouldCache() {
+  void shouldCache() {
     InvocationSensor<DummyDto> first = new InvocationSensor<>(DummyDto.class);
     InvocationSensor<DummyDto> second = new InvocationSensor<>(DummyDto.class);
     // The proxy is created once per type and cached, so all sensors of a type share the same proxy instance.
@@ -50,7 +50,7 @@ public class InvocationSensorTest {
   }
 
   @Test
-  public void shouldTrackInvocations() {
+  void shouldTrackInvocations() {
     InvocationSensor<DummyDto> invocationSensor = new InvocationSensor<>(DummyDto.class);
     DummyDto sensor = invocationSensor.getSensor();
 

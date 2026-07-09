@@ -11,10 +11,10 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class GenericsTest {
+class GenericsTest {
 
   @Test
-  public void shouldMapListOfGenericTypeFromInstance() {
+  void shouldMapListOfGenericTypeFromInstance() {
 
     List<Bean<String>> list = asList(new Bean<>("A"), new Bean<>("B"), new Bean<>("C"));
 
@@ -42,7 +42,7 @@ public class GenericsTest {
   }
 
   @Test
-  public void shouldMapGenericTypeFromInstance() {
+  void shouldMapGenericTypeFromInstance() {
     Mapper<Bean<String>, Bean2<String>> mapper = Mapping.from(new Bean<String>())
         .to(new Bean2<String>())
         .reassign(Bean::getObject)

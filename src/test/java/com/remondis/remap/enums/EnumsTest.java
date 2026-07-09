@@ -9,10 +9,10 @@ import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 import com.remondis.remap.MappingException;
 
-public class EnumsTest {
+class EnumsTest {
 
   @Test
-  public void shouldMapEnums() {
+  void shouldMapEnums() {
     Mapper<Person, PersonResource> mapper = Mapping.from(Person.class)
         .to(PersonResource.class)
         .mapper();
@@ -29,7 +29,7 @@ public class EnumsTest {
   }
 
   @Test
-  public void shouldThrowMappingException() {
+  void shouldThrowMappingException() {
     assertThatThrownBy(() -> Mapping.from(Person.class)
         .to(AnotherResource.class)
         .mapper()).isInstanceOf(MappingException.class)

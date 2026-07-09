@@ -19,7 +19,7 @@ import com.remondis.remap.MappingException;
 import com.remondis.remap.test.MapperTests.PersonWithAddress;
 import com.remondis.remap.test.MapperTests.PersonWithFoo;
 
-public class MapperTest {
+class MapperTest {
 
   public static final String MORE_IN_A = "moreInA";
   public static final Long ZAHL_IN_A = -88L;
@@ -31,7 +31,7 @@ public class MapperTest {
   public static final String STRING = "a string";
 
   @Test
-  public void shouldDenyMapNull() {
+  void shouldDenyMapNull() {
     Mapper<A, AResource> mapper = Mapping.from(A.class)
         .to(AResource.class)
         .reassign(A::getMoreInA)
@@ -46,7 +46,7 @@ public class MapperTest {
   }
 
   @Test
-  public void shouldFailDueToNoRegisteredMapper() {
+  void shouldFailDueToNoRegisteredMapper() {
     assertThatThrownBy(() -> Mapping.from(A.class)
         .to(AResource.class)
         .reassign(A::getMoreInA)
@@ -62,7 +62,7 @@ public class MapperTest {
    * check the inherited fields.
    */
   @Test
-  public void shouldMapCorrectly() {
+  void shouldMapCorrectly() {
     Mapper<A, AResource> mapper = Mapping.from(A.class)
         .to(AResource.class)
         .omitInSource(A::getMoreInA)
@@ -104,7 +104,7 @@ public class MapperTest {
    * configuration. The {@link Mapper} is expected to throw a {@link MappingException}.
    */
   @Test
-  public void oneMoreSourceFieldInA() {
+  void oneMoreSourceFieldInA() {
     assertThatThrownBy(() -> Mapping.from(AWithOneMoreSourceField.class)
         .to(AResourceWithOneMoreSourceField.class)
         .mapper()).isInstanceOf(MappingException.class)
@@ -115,7 +115,7 @@ public class MapperTest {
    * Ensures that an unmatched source field is omitted.
    */
   @Test
-  public void oneMoreSourceFieldInAButItIsOmitted() {
+  void oneMoreSourceFieldInAButItIsOmitted() {
     Mapper<AWithOneMoreSourceField, AResourceWithOneMoreSourceField> mapper = Mapping
         .from(AWithOneMoreSourceField.class)
         .to(AResourceWithOneMoreSourceField.class)
@@ -135,7 +135,7 @@ public class MapperTest {
    * configuration. The {@link Mapper} is expected to throw a {@link MappingException}.
    */
   @Test
-  public void oneMoreDestinationFieldInAResource() {
+  void oneMoreDestinationFieldInAResource() {
     assertThatThrownBy(() -> Mapping.from(AWithOneMoreDestinationField.class)
         .to(AResourceWithOneMoreDestinationField.class)
         .mapper()).isInstanceOf(MappingException.class)
@@ -146,7 +146,7 @@ public class MapperTest {
    * Ensures that an unmatched destination field is omitted.
    */
   @Test
-  public void oneMoreDestinationFieldInAResourceButItsOmmited() {
+  void oneMoreDestinationFieldInAResourceButItsOmmited() {
     Mapper<AWithOneMoreDestinationField, AResourceWithOneMoreDestinationField> mapper = Mapping
         .from(AWithOneMoreDestinationField.class)
         .to(AResourceWithOneMoreDestinationField.class)
@@ -164,7 +164,7 @@ public class MapperTest {
    * Ensures that the mapper performs a correct reassigment of fields.
    */
   @Test
-  public void reassign() {
+  void reassign() {
     Mapper<AReassign, AResourceReassign> mapper = Mapping.from(AReassign.class)
         .to(AResourceReassign.class)
         .reassign(AReassign::getFirstNumberInA)
@@ -185,7 +185,7 @@ public class MapperTest {
    * Ensures that the mapper does not allow an omitted field in the source to be reassigned.
    */
   @Test
-  public void reassignAnOmmitedFieldInSource() {
+  void reassignAnOmmitedFieldInSource() {
     assertThatThrownBy(() -> Mapping.from(AReassign.class)
         .to(AResourceReassign.class)
         .omitInSource(AReassign::getFirstNumberInA)
@@ -200,7 +200,7 @@ public class MapperTest {
    * Ensures that the mapper does not allow an omitted field in the destination to be reassigned.
    */
   @Test
-  public void reassignToAnOmmitedFieldInDestination() {
+  void reassignToAnOmmitedFieldInDestination() {
     assertThatThrownBy(() -> Mapping.from(AReassign.class)
         .to(AResourceReassign.class)
         .omitInDestination(ar -> ar.getFirstNumberInAResource())
@@ -215,7 +215,7 @@ public class MapperTest {
    * Ensures that the mapper detects an unmapped field in the destination while the all source fields are mapped.
    */
   @Test
-  public void reassignAndOneDestinationFieldIsUnmapped() {
+  void reassignAndOneDestinationFieldIsUnmapped() {
     assertThatThrownBy(() -> Mapping.from(AReassign.class)
         .to(AResourceReassign.class)
         .reassign(AReassign::getFirstNumberInA)
@@ -226,7 +226,7 @@ public class MapperTest {
 
   @SuppressWarnings("rawtypes")
   @Test
-  public void shouldMapToNewList() {
+  void shouldMapToNewList() {
     Mapper<A, AResource> mapper = Mapping.from(A.class)
         .to(AResource.class)
         .omitInSource(A::getMoreInA)
@@ -279,7 +279,7 @@ public class MapperTest {
 
   @SuppressWarnings("rawtypes")
   @Test
-  public void shouldMapToNewSet() {
+  void shouldMapToNewSet() {
     Mapper<A, AResource> mapper = Mapping.from(A.class)
         .to(AResource.class)
         .omitInSource(A::getMoreInA)
@@ -337,7 +337,7 @@ public class MapperTest {
   }
 
   @Test
-  public void shouldDenyIllegalArguments() {
+  void shouldDenyIllegalArguments() {
 
     assertThatThrownBy(() -> {
       Mapping.from(null);

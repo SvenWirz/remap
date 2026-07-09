@@ -7,9 +7,9 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class DefaultMethodTest {
+class DefaultMethodTest {
   @Test
-  public void test_defaults_methods() {
+  void test_defaults_methods() {
     Mapper<Interface, DestinationBean> mapper = Mapping.from(Interface.class)
         .to(DestinationBean.class)
         .mapper();
@@ -20,7 +20,7 @@ public class DefaultMethodTest {
   }
 
   @Test
-  public void test_withOverridden_defaults_methods() {
+  void test_withOverridden_defaults_methods() {
     Mapper<Interface, DestinationBean> mapper = Mapping.from(Interface.class)
         .to(DestinationBean.class)
         .mapper();

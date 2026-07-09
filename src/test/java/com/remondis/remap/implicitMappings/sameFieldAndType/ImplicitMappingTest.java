@@ -16,18 +16,18 @@ import com.remondis.remap.Mapping;
  * A mapping of property B->B' is performed implicitly if the field names are equal and [ the type is equal OR a type
  * mapper was registered that maps type(b) -> type(b') ].
  */
-public class ImplicitMappingTest {
+class ImplicitMappingTest {
   private Mapper<A, AResource> aMapper;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     this.aMapper = Mapping.from(A.class)
         .to(AResource.class)
         .mapper();
   }
 
   @Test
-  public void mappingImplicit() {
+  void mappingImplicit() {
     AResource aResource = aMapper
         .map(new A(new B("string"), asList(new B("string"), new B("string1"), new B("string2"))));
     assertNotNull(aResource.getB());

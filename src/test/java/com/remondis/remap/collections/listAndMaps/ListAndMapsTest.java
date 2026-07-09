@@ -12,10 +12,10 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class ListAndMapsTest {
+class ListAndMapsTest {
   @SuppressWarnings("unchecked")
   @Test
-  public void shouldMapNestedCollections() {
+  void shouldMapNestedCollections() {
 
     Mapper<B, BResource> bMapper = Mapping.from(B.class)
         .to(BResource.class)

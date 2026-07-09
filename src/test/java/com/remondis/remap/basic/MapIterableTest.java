@@ -20,11 +20,11 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class MapIterableTest {
+class MapIterableTest {
 
   @SuppressWarnings("rawtypes")
   @Test
-  public void mapFromIterable() {
+  void mapFromIterable() {
     Mapper<A, AResource> mapper = Mapping.from(A.class)
         .to(AResource.class)
         .omitInSource(A::getMoreInA)

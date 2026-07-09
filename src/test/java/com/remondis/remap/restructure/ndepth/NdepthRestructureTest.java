@@ -13,10 +13,10 @@ import com.remondis.remap.restructure.Address;
 import com.remondis.remap.restructure.Bean;
 import com.remondis.resample.Samples;
 
-public class NdepthRestructureTest {
+class NdepthRestructureTest {
 
   @Test
-  public void shouldReturnMappingModel_n_depth_for_Restructure_n_depth() {
+  void shouldReturnMappingModel_n_depth_for_Restructure_n_depth() {
 
     Mapper<Bean, Bean2> mapper = createMapper();
     MappingModel<Bean, Bean2>.TransformationSearchResult result = mapper.getMappingModel()
@@ -25,7 +25,7 @@ public class NdepthRestructureTest {
   }
 
   @Test
-  public void shouldRestructure_n_depth() {
+  void shouldRestructure_n_depth() {
 
     Mapper<Bean, Bean2> mapper = createMapper();
 
@@ -50,7 +50,7 @@ public class NdepthRestructureTest {
   }
 
   @Test
-  public void shouldAssertRestructuring() {
+  void shouldAssertRestructuring() {
     AssertMapping.of(createMapper())
         .expectOtherSourceFieldsToBeOmitted()
         .expectRestructure(Bean2::getPerson)
@@ -60,7 +60,7 @@ public class NdepthRestructureTest {
   }
 
   @Test
-  public void shouldComplainAboutUnexpectedMappingConfiguration() {
+  void shouldComplainAboutUnexpectedMappingConfiguration() {
     assertThatThrownBy(() -> AssertMapping.of(createMapper())
         .expectOtherSourceFieldsToBeOmitted()
         .expectRestructure(Bean2::getPerson)
@@ -72,7 +72,7 @@ public class NdepthRestructureTest {
   }
 
   @Test
-  public void shouldCompainAboutDifferentMappings() {
+  void shouldCompainAboutDifferentMappings() {
     Mapper<Bean, Bean2> mapper = Mapping.from(Bean.class)
         .to(Bean2.class)
         .omitOtherSourceProperties()
@@ -99,7 +99,7 @@ public class NdepthRestructureTest {
   }
 
   @Test
-  public void shouldComplainAboutUnexpectedNestedMappingConfiguration() {
+  void shouldComplainAboutUnexpectedNestedMappingConfiguration() {
     assertThatThrownBy(() -> AssertMapping.of(createMapper())
         .expectOtherSourceFieldsToBeOmitted()
         .expectRestructure(Bean2::getPerson)

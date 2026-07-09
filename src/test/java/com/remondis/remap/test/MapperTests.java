@@ -13,7 +13,7 @@ import com.remondis.remap.test.MapperTests.PersonWithAddress.Address;
 public class MapperTests {
 
   @Test
-  public void mapsBeansWithSameFields() {
+  void mapsBeansWithSameFields() {
     Mapper<BeanWithConstructors, BeanWithEmptyConstructor> mapper = Mapping.from(BeanWithConstructors.class)
         .to(BeanWithEmptyConstructor.class)
         .mapper();
@@ -23,7 +23,7 @@ public class MapperTests {
   }
 
   @Test
-  public void mapsWithDefaultConstructor() {
+  void mapsWithDefaultConstructor() {
     // when a bean does not have a constructor, it should work with using the
     // default constructor
     Mapper<BeanWithConstructors, BeanWithoutConstructor> mapper = Mapping.from(BeanWithConstructors.class)
@@ -35,7 +35,7 @@ public class MapperTests {
   }
 
   @Test
-  public void failsWithoutEmptyConstructor() {
+  void failsWithoutEmptyConstructor() {
     // when a bean does not have an empty constructor, mapping should fail
     assertThrows(MappingException.class, () -> Mapping.from(BeanWithConstructors.class)
         .to(BeanWithoutEmptyConstructor.class)
@@ -43,14 +43,14 @@ public class MapperTests {
   }
 
   @Test
-  public void failsOnUnspecifiedFields() {
+  void failsOnUnspecifiedFields() {
     assertThrows(MappingException.class, () -> Mapping.from(BeanWithConstructors.class)
         .to(Person.class)
         .mapper());
   }
 
   @Test
-  public void reassignsFields() {
+  void reassignsFields() {
     Mapper<BeanWithConstructors, Person> mapper = Mapping.from(BeanWithConstructors.class)
         .to(Person.class)
         .reassign(BeanWithConstructors::getIntField)
@@ -65,7 +65,7 @@ public class MapperTests {
   }
 
   @Test
-  public void omitsSourceField() {
+  void omitsSourceField() {
     Mapper<Person, Name> mapper = Mapping.from(Person.class)
         .to(Name.class)
         .omitInSource(Person::getAge)
@@ -76,7 +76,7 @@ public class MapperTests {
   }
 
   @Test
-  public void omitsDestinationField() {
+  void omitsDestinationField() {
     Mapper<Name, Person> mapper = Mapping.from(Name.class)
         .to(Person.class)
         .omitInDestination(Person::getAge)
@@ -87,14 +87,14 @@ public class MapperTests {
   }
 
   @Test
-  public void failsOnMissingNestedMapper() {
+  void failsOnMissingNestedMapper() {
     assertThrows(MappingException.class, () -> Mapping.from(PersonWithAddress.class)
         .to(HumanWithAddress.class)
         .mapper());
   }
 
   @Test
-  public void mapsNested() {
+  void mapsNested() {
     Mapper<PersonWithAddress, HumanWithAddress> mapper = Mapping.from(PersonWithAddress.class)
         .to(HumanWithAddress.class)
         .useMapper(Mapping.from(PersonWithAddress.Address.class)
@@ -113,7 +113,7 @@ public class MapperTests {
   }
 
   @Test
-  public void replaces() {
+  void replaces() {
     Mapper<PersonWithAddress, PersonWithFoo> mapper = Mapping.from(PersonWithAddress.class)
         .to(PersonWithFoo.class)
         .replace(PersonWithAddress::getAddress, PersonWithFoo::getFoo)

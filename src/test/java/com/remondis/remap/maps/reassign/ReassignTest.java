@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class ReassignTest {
+class ReassignTest {
 
   @Test
-  public void shouldReassignMaps() {
+  void shouldReassignMaps() {
     Mapper<A, AMapped> mapper = Mapping.from(A.class)
         .to(AMapped.class)
         .reassign(A::getBmap)

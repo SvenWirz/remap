@@ -8,10 +8,10 @@ import com.remondis.remap.AssertMapping;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class MapperTest {
+class MapperTest {
 
   @Test
-  public void shouldAllowMultipleReassigns() {
+  void shouldAllowMultipleReassigns() {
 
     Mapper<A, AResource> mapper = Mapping.from(A.class)
         .to(AResource.class)

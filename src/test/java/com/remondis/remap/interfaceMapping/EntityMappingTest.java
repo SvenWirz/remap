@@ -10,13 +10,13 @@ import com.remondis.remap.AssertMapping;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class EntityMappingTest {
+class EntityMappingTest {
 
   private Mapper<EntityA, EntityADTO> entityMapperWithoutId;
   private Mapper<EntityA, EntityWithIdDTO> entityMapperWithId;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     this.entityMapperWithoutId = Mapping.from(EntityA.class)
         .to(EntityADTO.class)
         .omitInSource(HasId::getId)
@@ -28,7 +28,7 @@ public class EntityMappingTest {
   }
 
   @Test
-  public void shouldMapEntityWithoutInterfaceAttribute() {
+  void shouldMapEntityWithoutInterfaceAttribute() {
     EntityA entity = new EntityA();
     entity.setName("Test Entity");
     EntityADTO dto = entityMapperWithoutId.map(entity);
@@ -37,7 +37,7 @@ public class EntityMappingTest {
   }
 
   @Test
-  public void shouldMapEntityWithInterfaceAttribute() {
+  void shouldMapEntityWithInterfaceAttribute() {
     EntityA entity = new EntityA();
     entity.setName("Test Entity");
     EntityWithIdDTO dto = entityMapperWithId.map(entity);
@@ -47,7 +47,7 @@ public class EntityMappingTest {
   }
 
   @Test
-  public void shouldComplainAboutImplicitMapping() {
+  void shouldComplainAboutImplicitMapping() {
     Mapper<EntityA, EntityADTO> implicitMapper = Mapping.from(EntityA.class)
         .to(EntityADTO.class)
         .omitInSource(EntityA::getId)

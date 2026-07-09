@@ -10,10 +10,10 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class MapPersonTest {
+class MapPersonTest {
 
   @Test
-  public void shouldMapToPersonView() {
+  void shouldMapToPersonView() {
     Person person = new Person("Mustermann", "Max", LocalDate.of(1988, 10, 9),
         new Address("Somewhere", "17a", "12346", "Nowhere", "max.mustermann@example.org"), "DE-71545498927");
 

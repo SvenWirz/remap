@@ -15,12 +15,12 @@ import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 import com.remondis.remap.propertypathmapping.Address;
 
-public class PropertyPathWithTransformationCollectionTest {
+class PropertyPathWithTransformationCollectionTest {
 
   private Mapper<Person, PersonView> mapper;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     this.mapper = Mapping.from(Person.class)
         .to(PersonView.class)
         .replaceCollection(Person::getAddresses, PersonView::getStreetLength)
@@ -30,14 +30,14 @@ public class PropertyPathWithTransformationCollectionTest {
   }
 
   @Test
-  public void shouldNotComplainAboutNull_1() {
+  void shouldNotComplainAboutNull_1() {
     Person person = new Person();
     PersonView view = mapper.map(person);
     assertNull(view.getStreetLength());
   }
 
   @Test
-  public void shouldNotComplainAboutNull_2() {
+  void shouldNotComplainAboutNull_2() {
     Person person = new Person(asList(new Address(null, "houseNumber", "zipCode", "city")));
     PersonView view = mapper.map(person);
     assertNotNull(view.getStreetLength());
@@ -46,7 +46,7 @@ public class PropertyPathWithTransformationCollectionTest {
   }
 
   @Test
-  public void shouldEvaluatePropertyPath() {
+  void shouldEvaluatePropertyPath() {
 
     String expectedStreet1 = "1";
     String expectedStreet2 = "2";
@@ -61,7 +61,7 @@ public class PropertyPathWithTransformationCollectionTest {
   }
 
   @Test
-  public void shouldAssertCorrectly() {
+  void shouldAssertCorrectly() {
     AssertMapping.of(mapper)
         .expectReplaceCollection(Person::getAddresses, PersonView::getStreetLength)
         .withPropertyPathAndTransformation(add -> add.getStreet())
@@ -69,7 +69,7 @@ public class PropertyPathWithTransformationCollectionTest {
   }
 
   @Test
-  public void shouldComplainAboutWrongPropertyPathCorrectly() {
+  void shouldComplainAboutWrongPropertyPathCorrectly() {
     assertThatThrownBy(() -> {
       AssertMapping.of(mapper)
           .expectReplaceCollection(Person::getAddresses, PersonView::getStreetLength)
@@ -79,7 +79,7 @@ public class PropertyPathWithTransformationCollectionTest {
   }
 
   @Test
-  public void shouldDistinctBetweenOtherReplaceOperations_andSkipWhenNull() {
+  void shouldDistinctBetweenOtherReplaceOperations_andSkipWhenNull() {
     assertThatThrownBy(() -> {
       AssertMapping.of(mapper)
           .expectReplaceCollection(Person::getAddresses, PersonView::getStreetLength)
@@ -89,7 +89,7 @@ public class PropertyPathWithTransformationCollectionTest {
   }
 
   @Test
-  public void shouldDistinctBetweenOtherReplaceOperations_andTest() {
+  void shouldDistinctBetweenOtherReplaceOperations_andTest() {
     assertThatThrownBy(() -> {
       AssertMapping.of(mapper)
           .expectReplaceCollection(Person::getAddresses, PersonView::getStreetLength)

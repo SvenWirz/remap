@@ -14,10 +14,10 @@ import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 import com.remondis.remap.MappingException;
 
-public class MapsTest {
+class MapsTest {
 
   @Test
-  public void shouldDoMapperValidation() {
+  void shouldDoMapperValidation() {
     Mapper<A1, A1Mapped> a1Mapper = Mapping.from(A1.class)
         .to(A1Mapped.class)
         .mapper();
@@ -56,7 +56,7 @@ public class MapsTest {
   }
 
   @Test
-  public void shouldMapNestedKeyValues() {
+  void shouldMapNestedKeyValues() {
     A1 a1 = new A1("key1");
     A2 key1 = new A2("value-key1");
     A3 value1 = new A3("value-value1");

@@ -6,9 +6,9 @@ import com.remondis.remap.AssertMapping;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class DemoTest {
+class DemoTest {
   @Test
-  public void demoMapping() {
+  void demoMapping() {
     Mapper<Customer, Person> customerPersonMapper = Mapping.from(Customer.class)
         .to(Person.class)
         // A customer has an address, a person might have no address

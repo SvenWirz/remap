@@ -6,10 +6,10 @@ import com.remondis.remap.Mapping;
 import com.remondis.resample.Samples;
 import org.junit.jupiter.api.Test;
 
-public class RestructuringDemoTest {
+class RestructuringDemoTest {
 
   @Test
-  public void shouldRestructurePerson() {
+  void shouldRestructurePerson() {
     Mapper<PersonFlat, Family> mapper = Mapping.from(PersonFlat.class)
         .to(Family.class)
         .omitOtherSourceProperties()

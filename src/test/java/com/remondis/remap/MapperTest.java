@@ -16,37 +16,37 @@ import org.junit.jupiter.api.Test;
 /**
  * This is the test of class {@link Mapper}.
  */
-public class MapperTest {
+class MapperTest {
 
   private Mapper<StringDto, StringDto> mapper;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     this.mapper = Mapping.from(StringDto.class)
         .to(StringDto.class)
         .mapper();
   }
 
   @Test
-  public void shouldMapEmptyList() {
+  void shouldMapEmptyList() {
     List<StringDto> list = mapper.map(Collections.emptyList());
     assertTrue(list.isEmpty());
   }
 
   @Test
-  public void shouldMapEmptySet() {
+  void shouldMapEmptySet() {
     Set<StringDto> list = mapper.map(Collections.emptySet());
     assertTrue(list.isEmpty());
   }
 
   @Test
-  public void shouldMapNull() {
+  void shouldMapNull() {
     StringDto returnValue = mapper.mapOptional(null);
     assertNull(returnValue);
   }
 
   @Test
-  public void shouldMapOptional() {
+  void shouldMapOptional() {
     String expectedString = "string";
     StringDto returnValue = mapper.mapOptional(new StringDto(expectedString));
     assertNotNull(returnValue);
@@ -54,7 +54,7 @@ public class MapperTest {
   }
 
   @Test
-  public void shouldMapDefault() {
+  void shouldMapDefault() {
     String expectedString = "string";
     StringDto expectedA = new StringDto(expectedString);
     StringDto returnValue = mapper.mapOrDefault(null, expectedA);
@@ -63,7 +63,7 @@ public class MapperTest {
   }
 
   @Test
-  public void shouldNotMapDefault() {
+  void shouldNotMapDefault() {
     String expectedString = "string";
     StringDto expectedA = new StringDto(expectedString);
     StringDto notExpectedDefault = new StringDto("someOtherString");

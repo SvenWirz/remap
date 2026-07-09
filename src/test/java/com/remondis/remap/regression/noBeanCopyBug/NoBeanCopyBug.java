@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class NoBeanCopyBug {
+class NoBeanCopyBug {
 
   /**
    * There was a bug in mapping an object holding a {@link BigDecimal}, a Java object not complying to Java bean
    * convention. The attempt was made to copy this instance by calling a default constructor, but there is none.
    */
   @Test
-  public void noBeanCopyBug() {
+  void noBeanCopyBug() {
     Mapper<A, AResource> mapper = Mapping.from(A.class)
         .to(AResource.class)
         .mapper();

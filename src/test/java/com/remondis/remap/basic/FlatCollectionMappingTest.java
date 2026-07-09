@@ -19,10 +19,10 @@ import com.remondis.remap.flatCollectionMapping.Destination;
 import com.remondis.remap.flatCollectionMapping.Id;
 import com.remondis.remap.flatCollectionMapping.Source;
 
-public class FlatCollectionMappingTest {
+class FlatCollectionMappingTest {
 
   @Test
-  public void shouldMapCollectionByFunction() {
+  void shouldMapCollectionByFunction() {
     Mapper<Source, Destination> mapper = Mapping.from(Source.class)
         .to(Destination.class)
         .replaceCollection(Source::getIds, Destination::getIds)
@@ -43,7 +43,7 @@ public class FlatCollectionMappingTest {
   }
 
   @Test
-  public void shouldDetectIllegalArguments() {
+  void shouldDetectIllegalArguments() {
     assertThatThrownBy(() -> {
       Mapping.from(Source.class)
           .to(Destination.class)
@@ -68,7 +68,7 @@ public class FlatCollectionMappingTest {
   }
 
   @Test
-  public void shouldNotSkipNullItems() {
+  void shouldNotSkipNullItems() {
     Mapper<Source, Destination> mapper = Mapping.from(Source.class)
         .to(Destination.class)
         .replaceCollection(Source::getIds, Destination::getIds)
@@ -92,7 +92,7 @@ public class FlatCollectionMappingTest {
   }
 
   @Test
-  public void shouldSkipNullItems() {
+  void shouldSkipNullItems() {
     Mapper<Source, Destination> mapper = Mapping.from(Source.class)
         .to(Destination.class)
         .replaceCollection(Source::getIds, Destination::getIds)
@@ -114,7 +114,7 @@ public class FlatCollectionMappingTest {
   }
 
   @Test
-  public void nullCollection() {
+  void nullCollection() {
     Mapper<Source, Destination> mapper = Mapping.from(Source.class)
         .to(Destination.class)
         .replaceCollection(Source::getIds, Destination::getIds)
@@ -127,7 +127,7 @@ public class FlatCollectionMappingTest {
   }
 
   @Test
-  public void shouldDetectDifferentNullStrategy() {
+  void shouldDetectDifferentNullStrategy() {
     Mapper<Source, Destination> mapper = Mapping.from(Source.class)
         .to(Destination.class)
         .replaceCollection(Source::getIds, Destination::getIds)

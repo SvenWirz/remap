@@ -6,14 +6,14 @@ import com.remondis.remap.AssertMapping;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class MapperTest {
+class MapperTest {
 
   /**
    * The bug was, that omitOtherSourceProperties() removed all implicit mappings. In this case the Mapper complained
    * about field "string1" is not being mapped.
    */
   @Test
-  public void shouldNotBreakImplicitMappings() {
+  void shouldNotBreakImplicitMappings() {
     Mapper<A, B> mapper = Mapping.from(A.class)
         .to(B.class)
         .replace(A::getString2, B::getString2Length)

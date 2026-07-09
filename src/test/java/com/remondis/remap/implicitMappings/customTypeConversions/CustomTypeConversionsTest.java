@@ -19,10 +19,10 @@ import com.remondis.remap.TypeMapping;
  * A mapping of property B->B' is performed implicitly if the field names are equal and [ the type is equal OR a type
  * mapper was registered that maps type(b) -> type(b') ].
  */
-public class CustomTypeConversionsTest {
+class CustomTypeConversionsTest {
 
   @Test
-  public void errorHandling() {
+  void errorHandling() {
     assertThatThrownBy(() -> Mapping.from(A.class)
         .to(AResource.class)
         .mapper()).isInstanceOf(MappingException.class)
@@ -31,14 +31,14 @@ public class CustomTypeConversionsTest {
   }
 
   @Test
-  public void mappingImplicitNullValues() {
+  void mappingImplicitNullValues() {
     A a = new A(null);
     AResource aResource = mapper().map(a);
     assertNull(aResource.getAddresses());
   }
 
   @Test
-  public void mappingImplicit() {
+  void mappingImplicit() {
     List<CharSequence> charSeqs = asList((CharSequence) "Address 1", (CharSequence) "Address 2");
     A a = new A(charSeqs);
     AResource aResource = mapper().map(a);

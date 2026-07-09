@@ -13,10 +13,10 @@ import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 import com.remondis.remap.MappingConfiguration;
 
-public class WriteNullTest {
+class WriteNullTest {
 
   @Test
-  public void shouldWriteNull() {
+  void shouldWriteNull() {
     Mapper<Source, Destination> mapper = Mapping.from(Source.class)
         .to(Destination.class)
         .writeNullIfSourceIsNull()
@@ -37,7 +37,7 @@ public class WriteNullTest {
   }
 
   @Test
-  public void shouldComplainAboutWrongNullHandling() {
+  void shouldComplainAboutWrongNullHandling() {
 
     MappingConfiguration<Source, Destination> configuration = Mapping.from(Source.class)
         .to(Destination.class);

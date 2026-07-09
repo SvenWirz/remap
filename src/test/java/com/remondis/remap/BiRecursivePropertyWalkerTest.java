@@ -13,10 +13,10 @@ import com.remondis.remap.utils.propertywalker.BiRecursivePropertyWalker;
 import com.remondis.remap.utils.propertywalker.PropertyAccess;
 import com.remondis.remap.utils.propertywalker.VisitorFunction;
 
-public class BiRecursivePropertyWalkerTest {
+class BiRecursivePropertyWalkerTest {
 
   @Test
-  public void shouldTraverseProperties() {
+  void shouldTraverseProperties() {
     Function<A, String> getter = A::getString;
     BiConsumer<A, String> setter = A::setString;
 

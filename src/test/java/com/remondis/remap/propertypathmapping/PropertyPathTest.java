@@ -11,12 +11,12 @@ import com.remondis.remap.AssertMapping;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class PropertyPathTest {
+class PropertyPathTest {
 
   private Mapper<Person, PersonView> mapper;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     this.mapper = Mapping.from(Person.class)
         .to(PersonView.class)
         .replace(Person::getAddress, PersonView::getStreet)
@@ -31,7 +31,7 @@ public class PropertyPathTest {
   }
 
   @Test
-  public void shouldNotComplainAboutNull_1() {
+  void shouldNotComplainAboutNull_1() {
     Person person = new Person("forename", "name", null);
     PersonView view = mapper.map(person);
     assertEquals(person.getForename(), view.getForename());
@@ -40,7 +40,7 @@ public class PropertyPathTest {
   }
 
   @Test
-  public void shouldNotComplainAboutNull_2() {
+  void shouldNotComplainAboutNull_2() {
     Person person = new Person("forename", "name", new Address(null, "houseNumber", "zipCode", "city"));
     PersonView view = mapper.map(person);
     assertEquals(person.getForename(), view.getForename());
@@ -56,7 +56,7 @@ public class PropertyPathTest {
   }
 
   @Test
-  public void shouldEvaluatePropertyPath() {
+  void shouldEvaluatePropertyPath() {
 
     Person person = new Person("forename", "name", new Address("street", "houseNumber", "zipCode", "city"));
 
@@ -75,7 +75,7 @@ public class PropertyPathTest {
   }
 
   @Test
-  public void shouldAssertCorrectly() {
+  void shouldAssertCorrectly() {
     AssertMapping.of(mapper)
         .expectReplace(Person::getAddress, PersonView::getStreet)
         .withPropertyPath(Address::getStreet)
@@ -89,7 +89,7 @@ public class PropertyPathTest {
   }
 
   @Test
-  public void shouldDistinctBetweenOtherReplaceOperations_andSkipWhenNull() {
+  void shouldDistinctBetweenOtherReplaceOperations_andSkipWhenNull() {
     assertThatThrownBy(() -> {
       AssertMapping.of(mapper)
           .expectReplace(Person::getAddress, PersonView::getStreet)
@@ -105,7 +105,7 @@ public class PropertyPathTest {
   }
 
   @Test
-  public void shouldDistinctBetweenOtherReplaceOperations_andTest() {
+  void shouldDistinctBetweenOtherReplaceOperations_andTest() {
     assertThatThrownBy(() -> {
       AssertMapping.of(mapper)
           .expectReplace(Person::getAddress, PersonView::getStreet)

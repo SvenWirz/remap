@@ -15,10 +15,10 @@ import org.junit.jupiter.api.TestMethodOrder;
 import com.remondis.remap.fluent.FluentSetterDto;
 
 @TestMethodOrder(MethodOrderer.MethodName.class)
-public class PropertiesTest {
+class PropertiesTest {
 
   @Test
-  public void a() {
+  void a() {
     Optional<PropertyDescriptor> pdFluentSetterNotThere = getProperties(FluentSetterDto.class, DESTINATION, false)
         .stream()
         .filter(pd -> pd.getName()
@@ -28,7 +28,7 @@ public class PropertiesTest {
   }
 
   @Test
-  public void b() {
+  void b() {
     // Changes the property descriptor persistently (vm-wide?).
     // Some cache is working here
     Optional<PropertyDescriptor> pdFluentSetter = getProperties(FluentSetterDto.class, DESTINATION, true).stream()
@@ -40,7 +40,7 @@ public class PropertiesTest {
   }
 
   @Test
-  public void c() {
+  void c() {
     Optional<PropertyDescriptor> pdFluentSetter = getProperties(FluentSetterDto.class, DESTINATION, false).stream()
         .filter(pd -> pd.getName()
             .equals("b1"))
@@ -50,7 +50,7 @@ public class PropertiesTest {
   }
 
   @Test
-  public void extendedClassDoesNotImplementsInterface() {
+  void extendedClassDoesNotImplementsInterface() {
     // given
     // when
     getProperties(InternalDummyB.class, DESTINATION, false); // fill cache with correct values
@@ -70,7 +70,7 @@ public class PropertiesTest {
   }
 
   @Test
-  public void interfaceIsNotFullyMapable() {
+  void interfaceIsNotFullyMapable() {
     // given
     // when
     PropertyDescriptor actual = getProperties(InternalDummyA.class, DESTINATION, false).stream()
@@ -88,7 +88,7 @@ public class PropertiesTest {
   }
 
   @Test
-  public void interfaceUsesGenericType() {
+  void interfaceUsesGenericType() {
     try {
       getProperties(InternalDummyC.class, DESTINATION, false);
     } catch (Exception e) {

@@ -7,9 +7,9 @@ import org.junit.jupiter.api.Test;
 import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
-public class VisibilityTest {
+class VisibilityTest {
   @Test
-  public void testVisibility() {
+  void testVisibility() {
     Mapper<C, CResource> mapper = Mapping.from(C.class)
         .to(CResource.class)
         .mapper();

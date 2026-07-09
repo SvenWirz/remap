@@ -10,13 +10,13 @@ import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 import com.remondis.remap.MappingException;
 
-public class BuilderTest {
+class BuilderTest {
 
   private static final long IDENTIFIER = 4L;
   private static final String NAME = "Bob";
 
   @Test
-  public void shouldMapToDestinationFromBuilder() {
+  void shouldMapToDestinationFromBuilder() {
 
     Mapper<BuilderModel, DestinationModel> mapper = Mapping.from(BuilderModel.class)
         .to(DestinationModel.class)
@@ -35,7 +35,7 @@ public class BuilderTest {
   }
 
   @Test
-  public void failsWhenMapFromBuilder() {
+  void failsWhenMapFromBuilder() {
     assertThrows(MappingException.class, () -> Mapping.from(DestinationModel.class)
         .to(BuilderModel.class)
         .mapper());

@@ -11,12 +11,12 @@ import com.remondis.remap.Mapper;
 import com.remondis.remap.Mapping;
 
 @Disabled
-public class CopyObjectTest {
+class CopyObjectTest {
 
   private static final String EXPECTED_STRING = "string";
 
   @Test
-  public void shouldCopyObjectsOfSameType() {
+  void shouldCopyObjectsOfSameType() {
     B b = new B(EXPECTED_STRING);
     A a = new A(b);
 
