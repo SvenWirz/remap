@@ -120,7 +120,7 @@ class Properties {
   static Set<PropertyDescriptor> getProperties(Class<?> inspectType, Target targetType, boolean fluentSetters) {
     try {
       Set<PropertyDescriptor> result = extractBaseProperties(inspectType, targetType, fluentSetters);
-      mergeInterfaceProperties(inspectType, result);
+      mergeInterfaceProperties(inspectType, targetType, result);
       return result;
     } catch (IntrospectionException e) {
       throw new MappingException(String.format("Cannot introspect the type %s.", inspectType.getName()));
@@ -149,7 +149,8 @@ class Properties {
   /**
    * Merges properties from implemented interfaces into the existing property set.
    */
-  private static void mergeInterfaceProperties(Class<?> inspectType, Set<PropertyDescriptor> result) {
+  private static void mergeInterfaceProperties(Class<?> inspectType, Target targetType,
+      Set<PropertyDescriptor> result) {
     for (Class<?> iface : inspectType.getInterfaces()) {
       Map<String, GetterSetterHolder> accessorsByProperty = new HashMap<>();
 
@@ -179,6 +180,14 @@ class Properties {
         PropertyDescriptor existing = findPropertyDescriptor(result, name);
 
         if (existing == null) {
+          // Interface properties are subject to the same access requirements as the base properties: a getter is
+          // always required and mapping targets additionally require a setter. Read-only properties declared by an
+          // interface are no mapping targets.
+          boolean isMappingCandidate = holder.getGetter() != null
+              && (Target.SOURCE.equals(targetType) || holder.getSetter() != null);
+          if (!isMappingCandidate) {
+            continue;
+          }
           try {
             PropertyDescriptor pd = new PropertyDescriptor(name, holder.getGetter(), holder.getSetter());
             result.add(pd);
