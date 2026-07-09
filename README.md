@@ -769,6 +769,16 @@ This workaround was tested and should work for most cases. Please file an issue 
 
 # Migration guide
 
+## Sidenote for 4.4.3
+Fixed an issue where interface properties without a corresponding setter were incorrectly added back to the target property set during mapper creation.
+
+Previously, when a mapping target implemented an interface that declared a getter-only property, the property was detected as read-only and filtered out correctly. However, a later processing step reintroduced the property, causing mapper creation to fail with a MappingException reporting an unmapped property.
+
+Interface properties are now handled consistently with regular properties:
+
+A getter is required for a property to be considered mappable.
+Mapping targets additionally require a setter to allow property mapping.
+
 ## Sidenote for 4.4.2
 - Improved `MappingException` messages for collections containing `null` elements. The exception now includes the specific field name (e.g., `stringList`) and source/destination types, making debugging easier.
 
