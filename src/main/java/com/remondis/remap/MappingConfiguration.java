@@ -553,23 +553,30 @@ public class MappingConfiguration<S, D> {
       Target target, String configurationMethod, Class<T> sensorType, TypedSelector<R, T> selector,
       boolean fluentSetters) {
     T sensor = (T) invocationSensor.getSensor();
-    // perform the selector lambda on the sensor
-    R returnValue = selector.selectField(sensor);
-    // if any property interaction was tracked...
-    if (invocationSensor.hasTrackedProperties()) {
-      // ...make sure it was exactly one property interaction
-      List<String> trackedPropertyNames = invocationSensor.getTrackedPropertyNames();
-      denyMultipleInteractions(configurationMethod, trackedPropertyNames);
-      // get the property name
-      String propertyName = trackedPropertyNames.get(0);
-      // find the property descriptor or fail with an exception
-      PropertyDescriptor property = getPropertyDescriptorOrFail(target, sensorType, propertyName, fluentSetters);
-      TypedPropertyDescriptor<R> tpd = new TypedPropertyDescriptor<R>();
-      tpd.returnValue = returnValue;
-      tpd.property = property;
-      return tpd;
-    } else {
-      throw zeroInteractions(configurationMethod);
+    // Defensively reset the tracking state: a previously failed selector invocation may have left tracked
+    // properties on this thread which would corrupt the evaluation of this selector.
+    invocationSensor.reset();
+    try {
+      // perform the selector lambda on the sensor
+      R returnValue = selector.selectField(sensor);
+      // if any property interaction was tracked...
+      if (invocationSensor.hasTrackedProperties()) {
+        // ...make sure it was exactly one property interaction
+        List<String> trackedPropertyNames = invocationSensor.getTrackedPropertyNames();
+        denyMultipleInteractions(configurationMethod, trackedPropertyNames);
+        // get the property name
+        String propertyName = trackedPropertyNames.get(0);
+        // find the property descriptor or fail with an exception
+        PropertyDescriptor property = getPropertyDescriptorOrFail(target, sensorType, propertyName, fluentSetters);
+        TypedPropertyDescriptor<R> tpd = new TypedPropertyDescriptor<R>();
+        tpd.returnValue = returnValue;
+        tpd.property = property;
+        return tpd;
+      } else {
+        throw zeroInteractions(configurationMethod);
+      }
+    } finally {
+      invocationSensor.reset();
     }
   }
 
@@ -595,19 +602,26 @@ public class MappingConfiguration<S, D> {
   static <T> PropertyDescriptor getPropertyFromFieldSelector(InvocationSensor<?> invocationSensor, Target target,
       String configurationMethod, Class<T> sensorType, FieldSelector<T> selector, boolean fluentSetters) {
     T sensor = (T) invocationSensor.getSensor();
-    // perform the selector lambda on the sensor
-    selector.selectField(sensor);
-    // if any property interaction was tracked...
-    if (invocationSensor.hasTrackedProperties()) {
-      // ...make sure it was exactly one property interaction
-      List<String> trackedPropertyNames = invocationSensor.getTrackedPropertyNames();
-      denyMultipleInteractions(configurationMethod, trackedPropertyNames);
-      // get the property name
-      String propertyName = trackedPropertyNames.get(0);
-      // find the property descriptor or fail with an exception
-      return getPropertyDescriptorOrFail(target, sensorType, propertyName, fluentSetters);
-    } else {
-      throw zeroInteractions(configurationMethod);
+    // Defensively reset the tracking state: a previously failed selector invocation may have left tracked
+    // properties on this thread which would corrupt the evaluation of this selector.
+    invocationSensor.reset();
+    try {
+      // perform the selector lambda on the sensor
+      selector.selectField(sensor);
+      // if any property interaction was tracked...
+      if (invocationSensor.hasTrackedProperties()) {
+        // ...make sure it was exactly one property interaction
+        List<String> trackedPropertyNames = invocationSensor.getTrackedPropertyNames();
+        denyMultipleInteractions(configurationMethod, trackedPropertyNames);
+        // get the property name
+        String propertyName = trackedPropertyNames.get(0);
+        // find the property descriptor or fail with an exception
+        return getPropertyDescriptorOrFail(target, sensorType, propertyName, fluentSetters);
+      } else {
+        throw zeroInteractions(configurationMethod);
+      }
+    } finally {
+      invocationSensor.reset();
     }
   }
 
