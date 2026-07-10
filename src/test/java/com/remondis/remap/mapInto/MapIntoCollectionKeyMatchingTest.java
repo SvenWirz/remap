@@ -314,4 +314,62 @@ public class MapIntoCollectionKeyMatchingTest {
         .getCity()).isEqualTo("Munich");
   }
 
+  @Test
+  public void shouldMatchRecordElementsByKeyAndPreserveDestinationComponents() {
+    // Source: AddressLite without houseNumber
+    PersonLite personLite = new PersonLite("Peter", "Griffin",
+        Arrays.asList(new AddressLite("Main Street", "Berlin"), new AddressLite("New Road", "Hamburg")));
+
+    // Destination: record elements with houseNumber set; "Gone Street" has no source counterpart
+    AddressRecord existingMatched = new AddressRecord("Main Street", "OldCity", 42);
+    AddressRecord existingOrphan = new AddressRecord("Gone Street", "OldCity", 7);
+    PersonWithRecordAddresses person = new PersonWithRecordAddresses(29, "OldForename", "OldLastname",
+        Arrays.asList(existingMatched, existingOrphan));
+
+    Mapper<AddressLite, AddressRecord> addressMapper = Mapping.from(AddressLite.class)
+        .to(AddressRecord.class)
+        .omitInDestination(AddressRecord::houseNumber)
+        .mapper();
+
+    Mapper<PersonLite, PersonWithRecordAddresses> mapper = Mapping.from(PersonLite.class)
+        .to(PersonWithRecordAddresses.class)
+        .useMapper(addressMapper, AddressLite::getStreet, AddressRecord::street)
+        .omitInDestination(PersonWithRecordAddresses::getAge)
+        .mapper();
+
+    PersonWithRecordAddresses result = mapper.map(personLite, person);
+
+    // Container-level fields: age preserved (omitted), names mapped
+    assertThat(result.getAge()).isEqualTo(29);
+    assertThat(result.getForename()).isEqualTo("Peter");
+    assertThat(result.getLastname()).isEqualTo("Griffin");
+
+    assertThat(result.getAddresses()).hasSize(2);
+
+    // Matched element: records are immutable, so a new instance is created with the
+    // omitted houseNumber component preserved from the matched destination element.
+    AddressRecord matched = result.getAddresses()
+        .stream()
+        .filter(a -> "Main Street".equals(a.street()))
+        .findFirst()
+        .orElse(null);
+    assertThat(matched).isNotNull();
+    assertThat(matched).isNotSameAs(existingMatched);
+    assertThat(matched.city()).isEqualTo("Berlin");
+    assertThat(matched.houseNumber()).isEqualTo(42);
+
+    // Unmatched source element: mapped to a new record, houseNumber defaults to null
+    AddressRecord created = result.getAddresses()
+        .stream()
+        .filter(a -> "New Road".equals(a.street()))
+        .findFirst()
+        .orElse(null);
+    assertThat(created).isNotNull();
+    assertThat(created.city()).isEqualTo("Hamburg");
+    assertThat(created.houseNumber()).isNull();
+
+    // Unmatched destination element is discarded
+    assertThat(result.getAddresses()).noneMatch(a -> "Gone Street".equals(a.street()));
+  }
+
 }

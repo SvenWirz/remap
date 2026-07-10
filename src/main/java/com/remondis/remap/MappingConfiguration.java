@@ -831,12 +831,13 @@ public class MappingConfiguration<S, D> {
    * Configures the mapper to write <code>null</code> value if the source value is null. If not set the mapper skips
    * mapping if the source value is <code>null</code>.
    *
-   * @return Returns this {@link MappingConfiguration} object for further configuration.
+   * <p>
+   * Note: This method was formerly deprecated together with the map-into feature. Since the map-into feature is
+   * supported again, this configuration is also supported again.
+   * </p>
    *
-   * @deprecated This method is deprecated, because the map-into feature of ReMap is not correctly implemented and will
-   *             be removed in future release.
+   * @return Returns this {@link MappingConfiguration} object for further configuration.
    */
-  @Deprecated
   public MappingConfiguration<S, D> writeNullIfSourceIsNull() {
     this.writeNullIfSourceIsNull = true;
     return this;
@@ -945,12 +946,15 @@ public class MappingConfiguration<S, D> {
   }
 
   /**
-   * Performs the actual mapping with iteration recursively through the object hierarchy.
-   * Warning, this feature is not provided for nested Collections instances, only for instances and nested instances
+   * Performs the actual mapping with iteration recursively through the object hierarchy. Collections in the object
+   * hierarchy are supported if key extractor functions were registered via
+   * {@link #useMapper(Mapper, Function, Function)} - otherwise collections are replaced entirely.
    *
    * @param source The source object to map to a new destination object.
-   * @param destination The destination object to populate
-   * @return Returns a newly created destination object.
+   * @param destination The destination object to populate. If the destination type is a record, a new record instance
+   *        is created and the component values of this object serve as defaults for unmapped fields.
+   * @return Returns the populated destination object, or a newly created instance if <code>null</code> was passed or
+   *         the destination type is a record.
    */
   D map(S source, D destination) {
     if (source == null) {

@@ -837,6 +837,8 @@ The matching behaviour for collection elements:
 
 **Without key extractors** (plain `useMapper`), the old behaviour is preserved: the destination collection is replaced entirely.
 
+Key matching also works when the collection elements are **Java Records**: since records are immutable, a matched element is replaced by a new record instance whose unmapped components are preserved from the matched destination element.
+
 You can find examples in [`MapIntoCollectionKeyMatchingTest`](src/test/java/com/remondis/remap/mapInto/MapIntoCollectionKeyMatchingTest.java).
 
 ### Tests

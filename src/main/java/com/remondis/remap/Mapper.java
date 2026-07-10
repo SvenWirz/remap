@@ -57,9 +57,15 @@ public class Mapper<S, D> {
    * (existing behavior).
    * </p>
    *
+   * <p>
+   * <b>Note on records:</b> If the destination type is a Java Record, a <b>new record instance</b> is returned
+   * because records are immutable. The component values of the specified destination record serve as defaults for
+   * all fields not covered by the mapping. Make sure to use the returned instance.
+   * </p>
+   *
    * @param source The source object to map to a new destination object.
    * @param destination The destination object to map into. Fields affected by the mapping will be overwritten.
-   * @return Returns the specified destination object.
+   * @return Returns the specified destination object, or a new instance if the destination type is a record.
    */
   public D map(S source, D destination) {
     return mapping.map(source, destination);
