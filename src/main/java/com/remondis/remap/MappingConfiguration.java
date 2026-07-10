@@ -696,31 +696,44 @@ public class MappingConfiguration<S, D> {
    * @return The property name referenced by the lambda.
    */
   static <T> String extractPropertyNameFromLambda(Serializable lambda, Class<T> type) {
+    String methodName;
     try {
       Method writeReplace = lambda.getClass()
           .getDeclaredMethod("writeReplace");
       writeReplace.setAccessible(true);
       SerializedLambda sl = (SerializedLambda) writeReplace.invoke(lambda);
-      String methodName = sl.getImplMethodName();
-
-      // For record accessors, the method name IS the property name (e.g., "isActive" for isActive())
-      if (type.isRecord()) {
-        return methodName;
-      }
-
-      // For JavaBeans-style getters, strip get/is prefix
-      if (methodName.startsWith("get") && methodName.length() > 3) {
-        return Character.toLowerCase(methodName.charAt(3)) + methodName.substring(4);
-      } else if (methodName.startsWith("is") && methodName.length() > 2) {
-        return Character.toLowerCase(methodName.charAt(2)) + methodName.substring(3);
-      }
-      return methodName;
+      methodName = sl.getImplMethodName();
     } catch (Exception e) {
       throw new MappingException(String.format(
           "Cannot extract property name from method reference for record type %s. "
               + "Only method references (e.g., MyRecord::name) are supported for record types, not inline lambdas.",
           type.getName()), e);
     }
+
+    /*
+     * An inline lambda (e.g. r -> r.name()) compiles to a synthetic method, so the referenced property cannot be
+     * identified. Detect this here to fail with a clear message instead of reporting the synthetic method name as an
+     * unknown property.
+     */
+    if (methodName.startsWith("lambda$")) {
+      throw new MappingException(String.format(
+          "Cannot extract property name from an inline lambda for record type %s. "
+              + "Only method references (e.g. %s::componentName) are supported for record types.",
+          type.getName(), type.getSimpleName()));
+    }
+
+    // For record accessors, the method name IS the property name (e.g., "isActive" for isActive())
+    if (type.isRecord()) {
+      return methodName;
+    }
+
+    // For JavaBeans-style getters, strip get/is prefix
+    if (methodName.startsWith("get") && methodName.length() > 3) {
+      return Character.toLowerCase(methodName.charAt(3)) + methodName.substring(4);
+    } else if (methodName.startsWith("is") && methodName.length() > 2) {
+      return Character.toLowerCase(methodName.charAt(2)) + methodName.substring(3);
+    }
+    return methodName;
   }
 
   static void denyAlreadyMappedProperty(Set<PropertyDescriptor> mappedProperties,

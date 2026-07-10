@@ -215,7 +215,7 @@ ReMap supports
 * mapping equal types does not copy object instances!
 * multi-classloader environments are currently not supported. All types must be loaded by the same classloader.
 * Generics cannot be used without limitations: It is possible to build a mapper for generic types, but due to the class literals used when declaring the mapping, the generic type informations gets lost.
-* when a Java Record is the **destination** type, the `map(S source, D dest)` overwrite-in-place method is not supported because records are immutable — an `UnsupportedOperationException` is thrown at runtime.
+* when a Java Record is the **destination** type, the `map(S source, D dest)` overwrite-in-place method returns a **new record instance** because records are immutable. The component values of the specified destination record are used as defaults for all fields not covered by the mapping.
 
 ## The mapping cookbook
 
@@ -643,7 +643,9 @@ if the following mappers were registered on the mapping:
 
 ReMap supports Java Records (introduced in Java 14) as both source and destination types. All the usual mapping operations (`reassign`, `replace`, `omitInSource`, `omitInDestination`, `useMapper`, …) work transparently for records. Because records are immutable, ReMap automatically constructs the destination record via its canonical constructor instead of using setter methods.
 
-> **Note:** The `map(S source, D destination)` overwrite-in-place variant is **not** supported when the destination is a record — records are immutable and cannot be modified after construction. An `UnsupportedOperationException` is thrown if you attempt this.
+> **Note:** Since records are immutable, the `map(S source, D destination)` overwrite-in-place variant cannot modify the specified destination record. Instead it returns a **new record instance**: the component values of the given destination record serve as defaults for all fields that are not covered by the mapping (for example omitted fields), while all mapped fields are taken from the source. Make sure to use the returned instance instead of the passed destination object.
+>
+> **Note:** Property selectors for record types must be **method references** (e.g. `PersonRecord::name`). Inline lambdas (e.g. `r -> r.name()`) cannot be analyzed for records and are rejected with a `MappingException` when the mapping is configured.
 
 #### POJO → Record (implicit)
 

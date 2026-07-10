@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
@@ -574,6 +575,67 @@ public class RecordMappingTest {
     assertEquals("Alice", result.name());
     assertEquals(0, result.age());
     assertFalse(result.active());
+  }
+
+  // ==================== Set Operation ====================
+
+  @Test
+  public void shouldMapPojoToRecord_withSet() {
+    Mapper<PersonPojo, PersonWithExtraRecord> mapper = Mapping.from(PersonPojo.class)
+        .to(PersonWithExtraRecord.class)
+        .omitInSource(PersonPojo::getEmail)
+        .omitInSource(PersonPojo::isActive)
+        .set(PersonWithExtraRecord::extra)
+        .with(source -> source.getName() + "-extra")
+        .mapper();
+
+    PersonWithExtraRecord result = mapper.map(new PersonPojo("John", 30, "john@example.com", true));
+
+    assertEquals("John", result.name());
+    assertEquals(30, result.age());
+    assertEquals("John-extra", result.extra());
+  }
+
+  // ==================== Restructure Operation ====================
+
+  @Test
+  public void shouldMapPojoToRecord_withRestructure() {
+    Mapper<PersonPojo, PersonWithAddressRecord> mapper = Mapping.from(PersonPojo.class)
+        .to(PersonWithAddressRecord.class)
+        .omitOtherSourceProperties()
+        .restructure(PersonWithAddressRecord::address)
+        .applying(config -> config.replace(PersonPojo::getEmail, AddressRecord::street)
+            .withSkipWhenNull(email -> email)
+            .replace(PersonPojo::getName, AddressRecord::city)
+            .withSkipWhenNull(name -> name))
+        .mapper();
+
+    PersonWithAddressRecord result = mapper.map(new PersonPojo("Dortmund", 30, "Main Street 1", false));
+
+    assertEquals("Dortmund", result.name());
+    assertNotNull(result.address());
+    assertEquals("Main Street 1", result.address()
+        .street());
+    assertEquals("Dortmund", result.address()
+        .city());
+  }
+
+  // ==================== Selector Validation ====================
+
+  @Test
+  public void shouldThrowOnInlineLambdaForRecordSelector() {
+    try {
+      Mapping.from(PersonPojo.class)
+          .to(PersonRecord.class)
+          .omitInDestination(record -> record.email())
+          .mapper();
+      fail("MappingException expected for inline lambda on record type");
+    } catch (MappingException e) {
+      assertTrue("Expected a hint to use method references, but was: " + e.getMessage(), e.getMessage()
+          .contains("method references"));
+      assertTrue("Expected the inline lambda to be reported, but was: " + e.getMessage(), e.getMessage()
+          .contains("inline lambda"));
+    }
   }
 
 }
