@@ -7,6 +7,8 @@ import static com.remondis.remap.MappingException.notAProperty;
 import static com.remondis.remap.MappingException.zeroInteractions;
 import static com.remondis.remap.Properties.createUnmappedMessage;
 import static com.remondis.remap.ReflectionUtil.newInstance;
+import static com.remondis.remap.Target.DESTINATION;
+import static com.remondis.remap.Target.SOURCE;
 import static java.util.Objects.nonNull;
 
 import java.beans.PropertyDescriptor;
@@ -156,7 +158,7 @@ public class MappingConfiguration<S, D> {
     denyNull("destinationSelector", destinationSelector);
 
     PropertyDescriptor propertyDescriptor = getPropertyFromFieldSelector(getDestinationeInvocationSensor(),
-        Target.DESTINATION, OMIT_FIELD_DEST, destination, destinationSelector, allowFluentSetters);
+        DESTINATION, OMIT_FIELD_DEST, destination, destinationSelector, allowFluentSetters);
     OmitTransformation omitDestination = OmitTransformation.omitDestination(this, propertyDescriptor);
     omitMapping(mappedDestinationProperties, propertyDescriptor, omitDestination);
     return this;
@@ -250,7 +252,7 @@ public class MappingConfiguration<S, D> {
   public MappingConfiguration<S, D> omitInSource(FieldSelector<S> sourceSelector) {
     denyNull("sourceSelector", sourceSelector);
     // Omit in source
-    PropertyDescriptor propertyDescriptor = getPropertyFromFieldSelector(getSourceInvocationSensor(), Target.SOURCE,
+    PropertyDescriptor propertyDescriptor = getPropertyFromFieldSelector(getSourceInvocationSensor(), SOURCE,
         OMIT_FIELD_SOURCE, this.source, sourceSelector, allowFluentSetters);
     OmitTransformation omitSource = OmitTransformation.omitSource(this, propertyDescriptor);
     omitMapping(mappedSourceProperties, propertyDescriptor, omitSource);
@@ -266,7 +268,7 @@ public class MappingConfiguration<S, D> {
    */
   public <RS> ReassignBuilder<S, D> reassign(FieldSelector<S> sourceSelector) {
     denyNull("sourceSelector", sourceSelector);
-    PropertyDescriptor typedSourceProperty = getPropertyFromFieldSelector(getSourceInvocationSensor(), Target.SOURCE,
+    PropertyDescriptor typedSourceProperty = getPropertyFromFieldSelector(getSourceInvocationSensor(), SOURCE,
         ReassignBuilder.ASSIGN, this.source, sourceSelector, allowFluentSetters);
     ReassignBuilder<S, D> reassignBuilder = new ReassignBuilder<>(typedSourceProperty, destination, this);
     return reassignBuilder;
@@ -290,9 +292,9 @@ public class MappingConfiguration<S, D> {
     denyNull("destinationSelector", destinationSelector);
 
     TypedPropertyDescriptor<RS> sourceProperty = getTypedPropertyFromFieldSelector(getSourceInvocationSensor(),
-        Target.SOURCE, ReplaceBuilder.TRANSFORM, this.source, sourceSelector, allowFluentSetters);
+        SOURCE, ReplaceBuilder.TRANSFORM, this.source, sourceSelector, allowFluentSetters);
     TypedPropertyDescriptor<RD> destProperty = getTypedPropertyFromFieldSelector(getDestinationeInvocationSensor(),
-        Target.DESTINATION, ReplaceBuilder.TRANSFORM, this.destination, destinationSelector, allowFluentSetters);
+        DESTINATION, ReplaceBuilder.TRANSFORM, this.destination, destinationSelector, allowFluentSetters);
 
     ReplaceBuilder<S, D, RD, RS> builder = new ReplaceBuilder<>(sourceProperty, destProperty, this);
     return builder;
@@ -311,7 +313,7 @@ public class MappingConfiguration<S, D> {
   public <RD> SetBuilder<S, D, RD> set(TypedSelector<RD, D> destinationSelector) {
     denyNull("destinationSelector", destinationSelector);
     TypedPropertyDescriptor<RD> destProperty = getTypedPropertyFromFieldSelector(getDestinationeInvocationSensor(),
-        Target.DESTINATION, ReplaceBuilder.TRANSFORM, this.destination, destinationSelector, allowFluentSetters);
+        DESTINATION, ReplaceBuilder.TRANSFORM, this.destination, destinationSelector, allowFluentSetters);
     SetBuilder<S, D, RD> builder = new SetBuilder<>(destProperty, this);
     return builder;
   }
@@ -328,7 +330,7 @@ public class MappingConfiguration<S, D> {
   public <RD> RestructureBuilder<S, D, RD> restructure(TypedSelector<RD, D> destinationSelector) {
     denyNull("destinationSelector", destinationSelector);
     TypedPropertyDescriptor<RD> destProperty = getTypedPropertyFromFieldSelector(getDestinationeInvocationSensor(),
-        Target.DESTINATION, ReplaceBuilder.TRANSFORM, this.destination, destinationSelector, allowFluentSetters);
+        DESTINATION, ReplaceBuilder.TRANSFORM, this.destination, destinationSelector, allowFluentSetters);
     return new RestructureBuilder<S, D, RD>(this, destProperty);
   }
 
@@ -349,10 +351,10 @@ public class MappingConfiguration<S, D> {
     denyNull("sourceSelector", sourceSelector);
     denyNull("destinationSelector", destinationSelector);
     TypedPropertyDescriptor<Collection<RS>> sourceProperty = getTypedPropertyFromFieldSelector(
-        getSourceInvocationSensor(), Target.SOURCE, ReplaceBuilder.TRANSFORM, this.source, sourceSelector,
+        getSourceInvocationSensor(), SOURCE, ReplaceBuilder.TRANSFORM, this.source, sourceSelector,
         allowFluentSetters);
     TypedPropertyDescriptor<Collection<RD>> destProperty = getTypedPropertyFromFieldSelector(
-        getDestinationeInvocationSensor(), Target.DESTINATION, ReplaceBuilder.TRANSFORM, this.destination,
+        getDestinationeInvocationSensor(), DESTINATION, ReplaceBuilder.TRANSFORM, this.destination,
         destinationSelector, allowFluentSetters);
 
     ReplaceCollectionBuilder<S, D, RD, RS> builder = new ReplaceCollectionBuilder<>(sourceProperty, destProperty, this);
@@ -507,11 +509,11 @@ public class MappingConfiguration<S, D> {
   }
 
   private Set<PropertyDescriptor> getUnmappedDestinationProperties() {
-    return getUnmappedProperties(destination, mappedDestinationProperties, Target.DESTINATION);
+    return getUnmappedProperties(destination, mappedDestinationProperties, DESTINATION);
   }
 
   private Set<PropertyDescriptor> getUnmappedSourceProperties() {
-    return getUnmappedProperties(source, mappedSourceProperties, Target.SOURCE);
+    return getUnmappedProperties(source, mappedSourceProperties, SOURCE);
   }
 
   /**
@@ -643,10 +645,19 @@ public class MappingConfiguration<S, D> {
         .findFirst();
     if (property.isPresent()) {
       return property.get();
-    } else {
-      throw notAProperty(type, propertyName);
+    } else if (target == DESTINATION) {
+      // For destination, also check with SOURCE target to find getter-only properties
+      // (getter-only properties are not mapping targets, but can be omitted)
+      property = Properties.getProperties(type, SOURCE, fluentSetters)
+          .stream()
+          .filter(pd -> pd.getName()
+              .equals(propertyName))
+          .findFirst();
+      if (property.isPresent()) {
+        return property.get();
+      }
     }
-
+    throw notAProperty(type, propertyName);
   }
 
   static void denyMultipleInteractions(String configurationMethod, List<String> trackedPropertyNames) {
