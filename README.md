@@ -767,7 +767,10 @@ This bug was fixed in `net.minidev:accessors-smart:1.2` but is still present in 
 
 This workaround was tested and should work for most cases. Please file an issue if you are experiencing problems.
 
-# Migration guide
+# Changelog / Migration guide
+
+## Sidenote for 4.4.6
+Minor bug fix: Read-only properties inherited through interface methods are now also recognized as mapping destinations.
 
 ## Sidenote for 4.4.5
 Version 4.4.5
