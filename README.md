@@ -28,7 +28,7 @@
 9. [Mapping meta model](#mapping-meta-model)
 10. [Spring integration](#spring-integration)
    1. [Spring Boot Issue](#spring-boot-issue)
-11. [Migration guide](#migration-guide)
+11. [Changelog](#changelog)
 12. [How to contribute](#how-to-contribute)
 
 ## Long story short
@@ -767,7 +767,7 @@ This bug was fixed in `net.minidev:accessors-smart:1.2` but is still present in 
 
 This workaround was tested and should work for most cases. Please file an issue if you are experiencing problems.
 
-# Changelog / Migration guide
+# Changelog
 
 ## Sidenote for 4.4.6
 Minor bug fix: Read-only properties inherited through interface methods are now also recognized as mapping destinations.
