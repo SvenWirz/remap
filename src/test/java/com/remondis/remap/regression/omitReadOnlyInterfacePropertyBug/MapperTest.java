@@ -8,13 +8,13 @@ import org.junit.jupiter.api.Test;
  * property (no setter), and the class manually overrides the getter without a backing field.
  */
 public class MapperTest {
-    @Test
-    public void omitInDestination_shouldNotFailOnGetterOnlyInterfaceProperty() {
-        // Should not throw MappingException - omitInDestination should accept getter-only
-        // properties silently as they are not mapping targets anyway
-        Mapping.from(A.class)
-                .to(B.class)
-                .omitInDestination(B::getReadOnlyProperty)
-                .mapper();
-    }
+  @Test
+  public void omitInDestination_shouldNotFailOnGetterOnlyInterfaceProperty() {
+    // Should not throw MappingException - omitInDestination should accept getter-only
+    // properties silently as they are not mapping targets anyway
+    Mapping.from(A.class)
+        .to(B.class)
+        .omitInDestination(B::getReadOnlyProperty)
+        .mapper();
+  }
 }
