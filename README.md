@@ -245,7 +245,7 @@ The following rules are validated:
 | --- | --- |
 | `UNWRITTEN_DESTINATION` | A `@Nullable` source property is mapped to a non-null destination property. The mapping is skipped for `null` values, so the destination property is never written. Applies to `reassign`, implicit mappings, `withSkipWhenNull` and property paths. |
 | `NULL_WRITTEN_TO_NON_NULL` | The mapper is configured with `writeNullIfSourceIsNull()` and writes `null` into a non-null destination property. |
-| `NULL_WRITTEN_TO_PRIMITIVE` | The mapper is configured with `writeNullIfSourceIsNull()` and writes `null` into a destination property of primitive type. This fails with an `IllegalArgumentException` while mapping. |
+| `NULL_WRITTEN_TO_PRIMITIVE` | The mapper is configured with `writeNullIfSourceIsNull()` and writes `null` into a destination property of primitive type. This fails with a `MappingException` while mapping. |
 | `NULLABLE_COLLECTION_ELEMENT` | The elements of a mapped collection are declared `@Nullable`. ReMap denies `null` elements while mapping collections. |
 | `NULLABLE_MAP_ENTRY` | The keys or values of a mapped map are declared `@Nullable` and are converted by a registered mapper. A mapper denies `null` input. |
 

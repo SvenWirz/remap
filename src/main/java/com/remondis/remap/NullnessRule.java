@@ -26,11 +26,11 @@ public enum NullnessRule {
 
   /**
    * The mapper is configured to write <code>null</code> values into a destination property of primitive type. The
-   * setter invocation fails with an {@link IllegalArgumentException} as soon as the source value is <code>null</code>.
+   * setter invocation fails with a {@link MappingException} as soon as the source value is <code>null</code>.
    */
   NULL_WRITTEN_TO_PRIMITIVE("The mapper is configured to write null if the source value is null, but the destination "
-      + "property is of primitive type. Writing null to it fails with an IllegalArgumentException as soon as the "
-      + "source value is null.", "Make the source property non-null, use a non-primitive destination property, or remove "
+      + "property is of primitive type. Writing null to it fails with a MappingException as soon as the source value "
+      + "is null.", "Make the source property non-null, use a non-primitive destination property, or remove "
           + "writeNullIfSourceIsNull() from the mapping configuration."),
 
   /**
