@@ -765,6 +765,13 @@ public class MappingConfiguration<S, D> {
   }
 
   /**
+   * @return Returns the {@link NullnessPolicy} this mapping configuration applies on detected nullness violations.
+   */
+  public NullnessPolicy getNullnessPolicy() {
+    return nullnessPolicy;
+  }
+
+  /**
    * Relaxes the strict java bean requirement that setters should return void, thus allowing for mapped classes to
    * be <em>fluent</em>.
    *

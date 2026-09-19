@@ -254,6 +254,17 @@ mapper or set the system property `remap.nullness.policy` to `WARN` or `ERROR` t
 `WARN` reports the violations to `java.util.logging` and is meant for introducing the validation in an existing code
 base.
 
+Like every mapping feature, the policy can be pinned down with the assert API:
+
+```java
+AssertMapping.of(mapper)
+    .expectNullnessPolicy(NullnessPolicy.ERROR)
+    .ensure();
+```
+
+Mappers that do not configure a policy use the default policy, which is what the assertion expects if
+`expectNullnessPolicy(..)` is not specified.
+
 ### What is not validated
 
 * **Properties without JSpecify annotations.** Following the JSpecify specification, a type usage that is not covered
