@@ -25,6 +25,7 @@ import com.remondis.remap.Mapping;
  * JMH benchmarks covering the mapping hot paths of ReMap:
  * <ul>
  * <li>{@link #mapFlatBean(MapperState)}: implicit mapping of a flat bean with 10 properties.</li>
+ * <li>{@link #mapFlatBeanToRecord(MapperState)}: implicit mapping of a flat bean with 10 properties to a record.</li>
  * <li>{@link #mapNestedBean(MapperState)}: mapping with a nested object using a registered mapper.</li>
  * <li>{@link #mapNestedBeanConcurrent(MapperState)}: same as above, but with 4 threads sharing one mapper
  * instance.</li>
@@ -44,6 +45,7 @@ public class MappingBenchmark {
   @State(Scope.Benchmark)
   public static class MapperState {
     Mapper<FlatSource, FlatDestination> flatMapper;
+    Mapper<FlatSource, FlatDestinationRecord> flatRecordMapper;
     Mapper<Address, AddressDto> addressMapper;
     Mapper<Person, PersonDto> personMapper;
 
@@ -54,6 +56,9 @@ public class MappingBenchmark {
     public void setup() {
       flatMapper = Mapping.from(FlatSource.class)
           .to(FlatDestination.class)
+          .mapper();
+      flatRecordMapper = Mapping.from(FlatSource.class)
+          .to(FlatDestinationRecord.class)
           .mapper();
       addressMapper = Mapping.from(Address.class)
           .to(AddressDto.class)
@@ -116,6 +121,11 @@ public class MappingBenchmark {
   @Benchmark
   public FlatDestination mapFlatBean(MapperState state) {
     return state.flatMapper.map(state.flatSource);
+  }
+
+  @Benchmark
+  public FlatDestinationRecord mapFlatBeanToRecord(MapperState state) {
+    return state.flatRecordMapper.map(state.flatSource);
   }
 
   @Benchmark
