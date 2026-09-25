@@ -1,13 +1,11 @@
 package com.remondis.remap.records;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.Test;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
 
 import com.remondis.remap.AssertMapping;
 import com.remondis.remap.Mapper;
@@ -27,10 +25,7 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
     PersonRecord result = mapper.map(source);
 
-    assertEquals("Alice", result.name());
-    assertEquals(30, result.age());
-    assertEquals("alice@example.com", result.email());
-    assertTrue(result.active());
+    assertThat(result).isEqualTo(new PersonRecord("Alice", 30, "alice@example.com", true));
   }
 
   @Test
@@ -50,10 +45,7 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Bob", 25, "bob@example.com", false);
     PersonResourceRecord result = mapper.map(source);
 
-    assertEquals("Bob", result.fullName());
-    assertEquals(25, result.yearsOld());
-    assertEquals("bob@example.com", result.emailAddress());
-    assertFalse(result.isActive());
+    assertThat(result).isEqualTo(new PersonResourceRecord("Bob", 25, "bob@example.com", false));
   }
 
   @Test
@@ -73,7 +65,7 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Charlie", 35, "charlie@example.com", true);
     PersonResourceRecord result = mapper.map(source);
 
-    assertEquals("CHARLIE", result.fullName());
+    assertThat(result.fullName()).isEqualTo("CHARLIE");
   }
 
   @Test
@@ -87,10 +79,7 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
     PersonRecord result = mapper.map(source);
 
-    assertEquals("Alice", result.name());
-    assertEquals(30, result.age());
-    assertNull(result.email());
-    assertTrue(result.active());
+    assertThat(result).isEqualTo(new PersonRecord("Alice", 30, null, true));
   }
 
   @Test
@@ -105,9 +94,7 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
     PersonWithExtraRecord result = mapper.map(source);
 
-    assertEquals("Alice", result.name());
-    assertEquals(30, result.age());
-    assertNull(result.extra());
+    assertThat(result).isEqualTo(new PersonWithExtraRecord("Alice", 30, null));
   }
 
   // ==================== Record -> POJO ====================
@@ -121,10 +108,10 @@ public class RecordMappingTest {
     PersonRecord source = new PersonRecord("Diana", 28, "diana@example.com", false);
     PersonPojo result = mapper.map(source);
 
-    assertEquals("Diana", result.getName());
-    assertEquals(28, result.getAge());
-    assertEquals("diana@example.com", result.getEmail());
-    assertFalse(result.isActive());
+    assertThat(result.getName()).isEqualTo("Diana");
+    assertThat(result.getAge()).isEqualTo(28);
+    assertThat(result.getEmail()).isEqualTo("diana@example.com");
+    assertThat(result.isActive()).isFalse();
   }
 
   @Test
@@ -144,10 +131,10 @@ public class RecordMappingTest {
     PersonRecord source = new PersonRecord("Eve", 40, "eve@example.com", true);
     PersonResourcePojo result = mapper.map(source);
 
-    assertEquals("Eve", result.getFullName());
-    assertEquals(40, result.getYearsOld());
-    assertEquals("eve@example.com", result.getEmailAddress());
-    assertTrue(result.isIsActive());
+    assertThat(result.getFullName()).isEqualTo("Eve");
+    assertThat(result.getYearsOld()).isEqualTo(40);
+    assertThat(result.getEmailAddress()).isEqualTo("eve@example.com");
+    assertThat(result.isIsActive()).isTrue();
   }
 
   @Test
@@ -167,7 +154,7 @@ public class RecordMappingTest {
     PersonRecord source = new PersonRecord("Frank", 50, "frank@example.com", false);
     PersonResourcePojo result = mapper.map(source);
 
-    assertEquals("Dr. Frank", result.getFullName());
+    assertThat(result.getFullName()).isEqualTo("Dr. Frank");
   }
 
   // ==================== Record -> Record ====================
@@ -181,10 +168,8 @@ public class RecordMappingTest {
     PersonRecord source = new PersonRecord("Grace", 22, "grace@example.com", true);
     PersonRecord result = mapper.map(source);
 
-    assertEquals("Grace", result.name());
-    assertEquals(22, result.age());
-    assertEquals("grace@example.com", result.email());
-    assertTrue(result.active());
+    assertThat(result).isEqualTo(source)
+        .isNotSameAs(source);
   }
 
   @Test
@@ -204,10 +189,7 @@ public class RecordMappingTest {
     PersonRecord source = new PersonRecord("Hank", 60, "hank@example.com", false);
     PersonResourceRecord result = mapper.map(source);
 
-    assertEquals("Hank", result.fullName());
-    assertEquals(60, result.yearsOld());
-    assertEquals("hank@example.com", result.emailAddress());
-    assertFalse(result.isActive());
+    assertThat(result).isEqualTo(new PersonResourceRecord("Hank", 60, "hank@example.com", false));
   }
 
   @Test
@@ -227,8 +209,8 @@ public class RecordMappingTest {
     PersonRecord source = new PersonRecord("Ivy", 29, "ivy@example.com", true);
     PersonResourceRecord result = mapper.map(source);
 
-    assertEquals("Ivy (verified)", result.fullName());
-    assertEquals(30, result.yearsOld());
+    assertThat(result.fullName()).isEqualTo("Ivy (verified)");
+    assertThat(result.yearsOld()).isEqualTo(30);
   }
 
   // ==================== Nested / Hierarchical Mapping ====================
@@ -247,12 +229,7 @@ public class RecordMappingTest {
     PersonWithAddressPojo source = new PersonWithAddressPojo("John", new AddressPojo("Main St", "Springfield"));
     PersonWithAddressRecord result = mapper.map(source);
 
-    assertEquals("John", result.name());
-    assertNotNull(result.address());
-    assertEquals("Main St", result.address()
-        .street());
-    assertEquals("Springfield", result.address()
-        .city());
+    assertThat(result).isEqualTo(new PersonWithAddressRecord("John", new AddressRecord("Main St", "Springfield")));
   }
 
   @Test
@@ -269,12 +246,11 @@ public class RecordMappingTest {
     PersonWithAddressRecord source = new PersonWithAddressRecord("Jane", new AddressRecord("Oak Ave", "Shelbyville"));
     PersonWithAddressPojo result = mapper.map(source);
 
-    assertEquals("Jane", result.getName());
-    assertNotNull(result.getAddress());
-    assertEquals("Oak Ave", result.getAddress()
-        .getStreet());
-    assertEquals("Shelbyville", result.getAddress()
-        .getCity());
+    assertThat(result.getName()).isEqualTo("Jane");
+    assertThat(result.getAddress()
+        .getStreet()).isEqualTo("Oak Ave");
+    assertThat(result.getAddress()
+        .getCity()).isEqualTo("Shelbyville");
   }
 
   @Test
@@ -291,11 +267,8 @@ public class RecordMappingTest {
     PersonWithAddressRecord source = new PersonWithAddressRecord("Kate", new AddressRecord("Elm St", "Capital City"));
     PersonWithAddressRecord result = mapper.map(source);
 
-    assertEquals("Kate", result.name());
-    assertEquals("Elm St", result.address()
-        .street());
-    assertEquals("Capital City", result.address()
-        .city());
+    assertThat(result).isEqualTo(source);
+    assertThat(result.address()).isNotSameAs(source.address());
   }
 
   // ==================== AssertMapping ====================
@@ -374,12 +347,10 @@ public class RecordMappingTest {
         .ensure();
   }
 
-  // ==================== Error Cases ====================
-
-  // ==================== MapInto (map with existing record) ====================
+  // ==================== Map into an existing record ====================
 
   @Test
-  public void shouldMapIntoRecord_overwriteAllFields() {
+  public void shouldDenyMappingIntoExistingRecord() {
     Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
         .to(PersonRecord.class)
         .mapper();
@@ -387,81 +358,13 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
     PersonRecord existing = new PersonRecord("Old", 0, "old@example.com", false);
 
-    PersonRecord result = mapper.map(source, existing);
-
-    assertEquals("Alice", result.name());
-    assertEquals(30, result.age());
-    assertEquals("alice@example.com", result.email());
-    assertTrue(result.active());
+    assertThatThrownBy(() -> mapper.map(source, existing)).isInstanceOf(MappingException.class)
+        .hasMessageContaining("Mapping into an existing instance of record type " + PersonRecord.class.getName())
+        .hasMessageContaining("Use Mapper.map(source)");
   }
 
   @Test
-  public void shouldMapIntoRecord_preserveOmittedFields() {
-    Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
-        .to(PersonRecord.class)
-        .omitInSource(PersonPojo::getAge)
-        .omitInDestination(PersonRecord::age)
-        .omitInSource(PersonPojo::isActive)
-        .omitInDestination(PersonRecord::active)
-        .mapper();
-
-    PersonPojo source = new PersonPojo("Alice", 99, "alice@example.com", true);
-    PersonRecord existing = new PersonRecord("Old", 42, "old@example.com", true);
-
-    PersonRecord result = mapper.map(source, existing);
-
-    // Mapped fields are overwritten
-    assertEquals("Alice", result.name());
-    assertEquals("alice@example.com", result.email());
-    // Omitted fields are preserved from existing record
-    assertEquals(42, result.age());
-    assertTrue(result.active());
-  }
-
-  @Test
-  public void shouldMapIntoRecord_returnsNewInstance() {
-    Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
-        .to(PersonRecord.class)
-        .mapper();
-
-    PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
-    PersonRecord existing = new PersonRecord("Old", 0, "old@example.com", false);
-
-    PersonRecord result = mapper.map(source, existing);
-
-    // Records are immutable — result must be a new instance
-    assertFalse(result == existing);
-  }
-
-  @Test
-  public void shouldMapIntoRecord_recordToRecord_preserveOmitted() {
-    Mapper<PersonRecord, PersonResourceRecord> mapper = Mapping.from(PersonRecord.class)
-        .to(PersonResourceRecord.class)
-        .reassign(PersonRecord::name)
-        .to(PersonResourceRecord::fullName)
-        .reassign(PersonRecord::email)
-        .to(PersonResourceRecord::emailAddress)
-        .omitInSource(PersonRecord::age)
-        .omitInSource(PersonRecord::active)
-        .omitInDestination(PersonResourceRecord::yearsOld)
-        .omitInDestination(PersonResourceRecord::isActive)
-        .mapper();
-
-    PersonRecord source = new PersonRecord("New", 10, "new@example.com", false);
-    PersonResourceRecord existing = new PersonResourceRecord("Old", 50, "old@example.com", true);
-
-    PersonResourceRecord result = mapper.map(source, existing);
-
-    // Mapped fields overwritten
-    assertEquals("New", result.fullName());
-    assertEquals("new@example.com", result.emailAddress());
-    // Omitted fields preserved from existing
-    assertEquals(50, result.yearsOld());
-    assertTrue(result.isActive());
-  }
-
-  @Test
-  public void shouldMapIntoRecord_withNullDestination_createsNew() {
+  public void shouldCreateNewRecordWhenMappingIntoNull() {
     Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
         .to(PersonRecord.class)
         .mapper();
@@ -469,71 +372,28 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
     PersonRecord result = mapper.map(source, null);
 
-    assertEquals("Alice", result.name());
-    assertEquals(30, result.age());
+    assertThat(result).isEqualTo(new PersonRecord("Alice", 30, "alice@example.com", true));
   }
+
+  // ==================== Error Cases ====================
 
   @Test
-  public void shouldMapIntoRecord_withNestedMapper() {
-    Mapper<AddressPojo, AddressRecord> addressMapper = Mapping.from(AddressPojo.class)
-        .to(AddressRecord.class)
-        .mapper();
-
-    Mapper<PersonWithAddressPojo, PersonWithAddressRecord> mapper = Mapping.from(PersonWithAddressPojo.class)
-        .to(PersonWithAddressRecord.class)
-        .useMapper(addressMapper)
-        .mapper();
-
-    PersonWithAddressPojo source = new PersonWithAddressPojo("New", new AddressPojo("New St", "New City"));
-    PersonWithAddressRecord existing = new PersonWithAddressRecord("Old", new AddressRecord("Old St", "Old City"));
-
-    PersonWithAddressRecord result = mapper.map(source, existing);
-
-    assertEquals("New", result.name());
-    assertNotNull(result.address());
-    assertEquals("New St", result.address()
-        .street());
-    assertEquals("New City", result.address()
-        .city());
-  }
-
-  @Test
-  public void shouldMapIntoRecord_withReplace() {
-    Mapper<PersonPojo, PersonResourceRecord> mapper = Mapping.from(PersonPojo.class)
-        .to(PersonResourceRecord.class)
-        .replace(PersonPojo::getName, PersonResourceRecord::fullName)
-        .with(name -> name.toUpperCase())
-        .reassign(PersonPojo::getAge)
-        .to(PersonResourceRecord::yearsOld)
-        .reassign(PersonPojo::getEmail)
-        .to(PersonResourceRecord::emailAddress)
-        .reassign(PersonPojo::isActive)
-        .to(PersonResourceRecord::isActive)
-        .mapper();
-
-    PersonPojo source = new PersonPojo("Bob", 25, "bob@example.com", false);
-    PersonResourceRecord existing = new PersonResourceRecord("Old", 99, "old@example.com", true);
-
-    PersonResourceRecord result = mapper.map(source, existing);
-
-    assertEquals("BOB", result.fullName());
-    assertEquals(25, result.yearsOld());
-  }
-
-  @Test(expected = MappingException.class)
   public void shouldThrowOnUnmappedRecordField() {
-    Mapping.from(PersonPojo.class)
+    assertThatThrownBy(() -> Mapping.from(PersonPojo.class)
         .to(PersonWithExtraRecord.class)
-        .mapper();
+        .mapper()).isInstanceOf(MappingException.class)
+        .hasMessageContaining("The following properties are unmapped")
+        .hasMessageContaining("Property 'extra' in PersonWithExtraRecord");
   }
 
-  @Test(expected = MappingException.class)
+  @Test
   public void shouldDenyMappingNullToRecord() {
     Mapper<PersonPojo, PersonRecord> mapper = Mapping.from(PersonPojo.class)
         .to(PersonRecord.class)
         .mapper();
 
-    mapper.map((PersonPojo) null);
+    assertThatThrownBy(() -> mapper.map((PersonPojo) null)).isInstanceOf(MappingException.class)
+        .hasMessage("Mapper cannot map null object.");
   }
 
   // ==================== Collection Mapping ====================
@@ -544,17 +404,13 @@ public class RecordMappingTest {
         .to(PersonRecord.class)
         .mapper();
 
-    java.util.List<PersonPojo> sources = new java.util.ArrayList<>();
-    sources.add(new PersonPojo("A", 1, "a@x.com", true));
-    sources.add(new PersonPojo("B", 2, "b@x.com", false));
+    List<PersonPojo> sources = List.of(new PersonPojo("A", 1, "a@x.com", true),
+        new PersonPojo("B", 2, "b@x.com", false));
 
-    java.util.List<PersonRecord> results = mapper.map(sources);
+    List<PersonRecord> results = mapper.map(sources);
 
-    assertEquals(2, results.size());
-    assertEquals("A", results.get(0)
-        .name());
-    assertEquals("B", results.get(1)
-        .name());
+    assertThat(results).containsExactly(new PersonRecord("A", 1, "a@x.com", true),
+        new PersonRecord("B", 2, "b@x.com", false));
   }
 
   // ==================== Primitive Defaults ====================
@@ -572,9 +428,7 @@ public class RecordMappingTest {
     PersonPojo source = new PersonPojo("Alice", 30, "alice@example.com", true);
     PersonRecord result = mapper.map(source);
 
-    assertEquals("Alice", result.name());
-    assertEquals(0, result.age());
-    assertFalse(result.active());
+    assertThat(result).isEqualTo(new PersonRecord("Alice", 0, "alice@example.com", false));
   }
 
   // ==================== Set Operation ====================
@@ -591,9 +445,7 @@ public class RecordMappingTest {
 
     PersonWithExtraRecord result = mapper.map(new PersonPojo("John", 30, "john@example.com", true));
 
-    assertEquals("John", result.name());
-    assertEquals(30, result.age());
-    assertEquals("John-extra", result.extra());
+    assertThat(result).isEqualTo(new PersonWithExtraRecord("John", 30, "John-extra"));
   }
 
   // ==================== Restructure Operation ====================
@@ -612,30 +464,19 @@ public class RecordMappingTest {
 
     PersonWithAddressRecord result = mapper.map(new PersonPojo("Dortmund", 30, "Main Street 1", false));
 
-    assertEquals("Dortmund", result.name());
-    assertNotNull(result.address());
-    assertEquals("Main Street 1", result.address()
-        .street());
-    assertEquals("Dortmund", result.address()
-        .city());
+    assertThat(result)
+        .isEqualTo(new PersonWithAddressRecord("Dortmund", new AddressRecord("Main Street 1", "Dortmund")));
   }
 
   // ==================== Selector Validation ====================
 
   @Test
   public void shouldThrowOnInlineLambdaForRecordSelector() {
-    try {
-      Mapping.from(PersonPojo.class)
-          .to(PersonRecord.class)
-          .omitInDestination(record -> record.email())
-          .mapper();
-      fail("MappingException expected for inline lambda on record type");
-    } catch (MappingException e) {
-      assertTrue("Expected a hint to use method references, but was: " + e.getMessage(), e.getMessage()
-          .contains("method references"));
-      assertTrue("Expected the inline lambda to be reported, but was: " + e.getMessage(), e.getMessage()
-          .contains("inline lambda"));
-    }
+    assertThatThrownBy(() -> Mapping.from(PersonPojo.class)
+        .to(PersonRecord.class)
+        .omitInDestination(record -> record.email())).isInstanceOf(MappingException.class)
+        .hasMessageContaining("must be selected by method references like PersonRecord::componentName")
+        .hasMessageContaining("Inline lambdas cannot be analyzed");
   }
 
 }

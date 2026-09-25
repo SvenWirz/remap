@@ -28,15 +28,6 @@ class SetTransformation<S, D, RD> extends Transformation {
   }
 
   @Override
-  protected void performTransformation(PropertyDescriptor sourceProperty, Object source,
-      PropertyDescriptor destinationProperty, Object destination) throws MappingException {
-    MappedResult result = performValueTransformation(source, destination);
-    if (result.hasValue()) {
-      writeOrFail(destinationProperty, destination, result.getValue());
-    }
-  }
-
-  @Override
   @SuppressWarnings("unchecked")
   protected MappedResult performValueTransformation(Object source, Object destination) throws MappingException {
     Object destinationValue = transformation.apply((S) source);

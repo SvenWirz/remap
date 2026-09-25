@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -122,7 +123,7 @@ class Properties {
   static Set<PropertyDescriptor> getProperties(Class<?> inspectType, Target targetType, boolean fluentSetters) {
     try {
       if (inspectType.isRecord()) {
-        return extractRecordProperties(inspectType, targetType);
+        return getRecordProperties(inspectType, targetType);
       }
       Set<PropertyDescriptor> result = extractBaseProperties(inspectType, targetType, fluentSetters);
       mergeInterfaceProperties(inspectType, targetType, result);
@@ -133,22 +134,86 @@ class Properties {
   }
 
   /**
-   * Extracts properties from a Java Record using its record components.
-   * Record accessors (e.g., {@code name()}) are used as read methods.
-   * Records have no write methods (immutable).
-   * For destination records, properties are returned without requiring a setter.
+   * Returns the property of the specified type that is read by the method with the specified name. For records, a
+   * getter named like a record component - for example <code>getName()</code> for the component <code>name</code> - is
+   * resolved to the record component.
+   *
+   * @param inspectType The type to inspect.
+   * @param targetType The type of mapping target.
+   * @param readMethodName The name of the read method.
+   * @param fluentSetters if true, setters that return a value are allowed in the mapping.
+   * @return Returns the property read by the specified method or an empty {@link Optional} if the method does not
+   *         read a property of the specified type.
+   * @throws MappingException Thrown on any introspection error.
    */
-  private static Set<PropertyDescriptor> extractRecordProperties(Class<?> recordType, Target targetType) {
-    RecordComponent[] components = recordType.getRecordComponents();
+  static Optional<PropertyDescriptor> getPropertyByReadMethod(Class<?> inspectType, Target targetType,
+      String readMethodName, boolean fluentSetters) {
+    Set<PropertyDescriptor> properties = getProperties(inspectType, targetType, fluentSetters);
+    Optional<PropertyDescriptor> property = findByReadMethodName(properties, readMethodName);
+    if (property.isPresent() || !inspectType.isRecord()) {
+      return property;
+    }
+    try {
+      return findByReadMethodName(getRecordGetterProperties(inspectType), readMethodName)
+          .map(getter -> findPropertyDescriptor(properties, getter.getName()));
+    } catch (IntrospectionException e) {
+      throw new MappingException(String.format("Cannot introspect the type %s.", inspectType.getName()));
+    }
+  }
+
+  private static Optional<PropertyDescriptor> findByReadMethodName(Set<PropertyDescriptor> properties,
+      String readMethodName) {
+    return properties.stream()
+        .filter(pd -> pd.getReadMethod()
+            .getName()
+            .equals(readMethodName))
+        .findFirst();
+  }
+
+  /**
+   * Returns the properties of a record type. The record components are read by their accessor methods and written by
+   * the canonical constructor, so they are mapping sources as well as mapping targets. Other getter methods of a record
+   * - for example derived values or getters added for bean-based libraries - are read-only properties and therefore
+   * only mapping sources, just like read-only properties of Java Beans. Records used as mapping source were
+   * introspected as Java Beans before ReMap supported records, so this keeps existing mappings working. A getter named
+   * like a record component - for example <code>getName()</code> for the component <code>name</code> - is an alias of
+   * the component and not a property of its own.
+   */
+  private static Set<PropertyDescriptor> getRecordProperties(Class<?> recordType, Target targetType)
+      throws IntrospectionException {
     Set<PropertyDescriptor> result = new HashSet<>();
-    for (RecordComponent component : components) {
-      try {
-        PropertyDescriptor pd = new PropertyDescriptor(component.getName(), component.getAccessor(), null);
-        result.add(pd);
-      } catch (IntrospectionException e) {
-        throw new MappingException(String.format("Cannot create property descriptor for record component '%s' in %s.",
-            component.getName(), recordType.getName()));
+    Set<String> componentNames = new HashSet<>();
+    Set<String> accessorNames = new HashSet<>();
+    for (RecordComponent component : recordType.getRecordComponents()) {
+      result.add(new PropertyDescriptor(component.getName(), component.getAccessor(), null));
+      componentNames.add(component.getName());
+      accessorNames.add(component.getAccessor()
+          .getName());
+    }
+    if (Target.SOURCE.equals(targetType)) {
+      for (PropertyDescriptor getterProperty : getRecordGetterProperties(recordType)) {
+        boolean isComponentAlias = componentNames.contains(getterProperty.getName());
+        // An accessor like isActive() of the component isActive is also a Java Bean getter of the property active.
+        boolean isComponentAccessor = accessorNames.contains(getterProperty.getReadMethod()
+            .getName());
+        if (!isComponentAlias && !isComponentAccessor) {
+          result.add(getterProperty);
+        }
       }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the getter-based properties of a record type as read-only properties, determined the same way as the
+   * source properties of Java Beans.
+   */
+  private static Set<PropertyDescriptor> getRecordGetterProperties(Class<?> recordType) throws IntrospectionException {
+    Set<PropertyDescriptor> beanProperties = extractBaseProperties(recordType, Target.SOURCE, false);
+    mergeInterfaceProperties(recordType, Target.SOURCE, beanProperties);
+    Set<PropertyDescriptor> result = new HashSet<>();
+    for (PropertyDescriptor beanProperty : beanProperties) {
+      result.add(new PropertyDescriptor(beanProperty.getName(), beanProperty.getReadMethod(), null));
     }
     return result;
   }

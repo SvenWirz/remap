@@ -6,8 +6,10 @@ import static com.remondis.remap.Properties.createUnmappedMessage;
 import static com.remondis.remap.Properties.getPropertyClass;
 
 import java.beans.PropertyDescriptor;
+import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -128,6 +130,74 @@ public class MappingException extends RuntimeException {
 
   static MappingException newInstanceFailed(Class<?> type, Exception e) {
     return new MappingException(String.format("Creating a new instance of type %s failed.", type.getName()), e);
+  }
+
+  static MappingException recordConstructionFailed(Class<?> recordType, Throwable cause) {
+    return new MappingException(
+        String.format("Creating a new instance of record type %s failed: %s", recordType.getName(), cause), cause);
+  }
+
+  static MappingException nullForPrimitiveRecordComponent(Class<?> recordType, RecordComponent component) {
+    return new MappingException(String.format(
+        "Creating a new instance of record type %s failed: The mapping produced null for the component '%s' of "
+            + "primitive type %s.",
+        recordType.getName(), component.getName(), component.getType()
+            .getName()));
+  }
+
+  static MappingException mapIntoRecordNotSupported(Class<?> recordType) {
+    return new MappingException(String
+        .format("Mapping into an existing instance of record type %s is not supported, because records are immutable. "
+            + "Use Mapper.map(source) to create a new record instance.", recordType.getName()));
+  }
+
+  static MappingException inlineLambdaOnRecord(Class<?> recordType) {
+    return new MappingException(String.format(
+        "Properties of record type %s must be selected by method references like %s::componentName. Inline lambdas "
+            + "cannot be analyzed, because records cannot be proxied.",
+        recordType.getName(), recordType.getSimpleName()));
+  }
+
+  static MappingException noMethodReferenceOnRecord(Class<?> recordType) {
+    return new MappingException(String.format(
+        "Properties of record type %s must be selected by method references like %s::componentName. The specified "
+            + "selector is not a lambda expression or method reference.",
+        recordType.getName(), recordType.getSimpleName()));
+  }
+
+  static MappingException inaccessibleMethodReference(Class<?> recordType, Exception e) {
+    return new MappingException(String.format(
+        "Cannot analyze the method reference selecting a property of record type %s. If the selector is declared in a "
+            + "Java module, the module must open the declaring package to ReMap.",
+        recordType.getName()), e);
+  }
+
+  static MappingException notARecordProperty(Class<?> recordType, SerializedLambda methodReference) {
+    String declaringType = methodReference.getImplClass()
+        .replace('/', '.');
+    return new MappingException(String.format(
+        "The method reference %s::%s does not select a property of record type %s. Use a method reference to a record "
+            + "component accessor or getter of %s.",
+        declaringType, methodReference.getImplMethodName(), recordType.getName(), recordType.getSimpleName()));
+  }
+
+  static MappingException propertyPathOnRecord(PropertyDescriptor sourceProperty, Class<?> recordType) {
+    return new MappingException(String.format(
+        "The property path on %s cannot be evaluated, because %s is a record type. Property paths are recorded using "
+            + "proxy objects and records cannot be proxied. Use replace() with a transformation function instead.",
+        asString(sourceProperty), recordType.getName()));
+  }
+
+  static MappingException propertyPathNotEvaluable(PropertyDescriptor sourceProperty, RuntimeException cause) {
+    Throwable rootCause = cause;
+    while (rootCause.getCause() != null) {
+      rootCause = rootCause.getCause();
+    }
+    return new MappingException(String.format(
+        "The property path on %s cannot be evaluated (%s). Property paths are recorded using proxy objects, so records "
+            + "and other final types are not supported within property paths. Use replace() with a transformation "
+            + "function instead.",
+        asString(sourceProperty), rootCause.getMessage()), cause);
   }
 
   static MappingException unsupportedCollection(Collection<?> collection) {

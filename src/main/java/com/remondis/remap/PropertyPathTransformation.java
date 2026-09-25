@@ -5,6 +5,7 @@ import static com.remondis.remap.Properties.asString;
 import java.beans.PropertyDescriptor;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.remondis.propertypath.api.Get;
 import com.remondis.propertypath.api.Getter;
@@ -46,28 +47,59 @@ public class PropertyPathTransformation<RS, X, RD> extends Transformation {
 
   @SuppressWarnings("unchecked")
   private Get<RS, RD, ?> createGetter(PropertyDescriptor sourceProperty, PropertyPath<RD, RS, ?> propertyPath) {
-    return Getter.newFor((Class<RS>) sourceProperty.getPropertyType())
-        .evaluate(propertyPath);
+    Class<RS> sourceType = (Class<RS>) sourceProperty.getPropertyType();
+    return evaluatePropertyPath(sourceProperty, sourceType, () -> Getter.newFor(sourceType)
+        .evaluate(propertyPath));
   }
 
   @SuppressWarnings("unchecked")
   private Get<RS, RD, ?> createGetterAndApply(PropertyDescriptor sourceProperty, PropertyPath<X, RS, ?> propertyPath,
       Function<X, RD> transformation) {
-    return Getter.newFor((Class<RS>) sourceProperty.getPropertyType())
+    Class<RS> sourceType = (Class<RS>) sourceProperty.getPropertyType();
+    return evaluatePropertyPath(sourceProperty, sourceType, () -> Getter.newFor(sourceType)
         .evaluate(propertyPath)
-        .andApply(transformation);
+        .andApply(transformation));
   }
 
-  @Override
-  protected void performTransformation(PropertyDescriptor sourceProperty, Object source,
-      PropertyDescriptor destinationProperty, Object destination) throws MappingException {
-    Object sourceValue = readOrFail(sourceProperty, source);
-
-    MappedResult result = performValueTransformation(sourceValue, destination);
-
-    if (result.hasValue()) {
-      writeOrFail(destinationProperty, destination, result.getValue());
+  /**
+   * Evaluates a property path on the specified type. Property paths are recorded using proxy objects of the types on
+   * the path, which cannot be created for records and other final types. This is reported as {@link MappingException}
+   * instead of the exception thrown by the property path library.
+   *
+   * @param sourceProperty The source property the property path is applied to.
+   * @param pathType The type the property path starts at.
+   * @param evaluation Evaluates the property path.
+   * @return Returns the result of the evaluation.
+   */
+  static <G> G evaluatePropertyPath(PropertyDescriptor sourceProperty, Class<?> pathType, Supplier<G> evaluation) {
+    if (pathType.isRecord()) {
+      throw MappingException.propertyPathOnRecord(sourceProperty, pathType);
     }
+    try {
+      return evaluation.get();
+    } catch (RuntimeException e) {
+      if (isCausedByTypeNotProxyable(e)) {
+        throw MappingException.propertyPathNotEvaluable(sourceProperty, e);
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * The property path library throws an {@link IllegalArgumentException} if the type the property path starts at
+   * cannot be subclassed. For other types on the path that cannot be subclassed it returns <code>null</code>, so the
+   * property path fails with a {@link NullPointerException}.
+   */
+  private static boolean isCausedByTypeNotProxyable(RuntimeException exception) {
+    if (exception instanceof IllegalArgumentException) {
+      return true;
+    }
+    for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+      if (cause instanceof NullPointerException) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -95,12 +127,6 @@ public class PropertyPathTransformation<RS, X, RD> extends Transformation {
 
   @Override
   protected void validateTransformation() throws MappingException {
-  }
-
-  @Override
-  MappedResult computeValue(Object sourceObject) {
-    Object sourceValue = readOrFail(sourceProperty, sourceObject);
-    return performValueTransformation(sourceValue, null);
   }
 
   @Override

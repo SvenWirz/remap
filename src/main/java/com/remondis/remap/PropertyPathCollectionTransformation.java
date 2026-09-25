@@ -1,6 +1,7 @@
 package com.remondis.remap;
 
 import static com.remondis.remap.Properties.asString;
+import static com.remondis.remap.PropertyPathTransformation.evaluatePropertyPath;
 import static com.remondis.remap.ReflectionUtil.getCollector;
 
 import java.beans.PropertyDescriptor;
@@ -52,8 +53,8 @@ public class PropertyPathCollectionTransformation<RS, X, RD> extends Transformat
   private Get<RS, RD, ?> createGetter(PropertyDescriptor sourceProperty, PropertyPath<RD, RS, ?> propertyPath) {
     Class<RS> genericSourceType = (Class<RS>) ReassignTransformation
         .findGenericTypeFromMethod(sourceProperty.getReadMethod(), 0);
-    return Getter.newFor(genericSourceType)
-        .evaluate(propertyPath);
+    return evaluatePropertyPath(sourceProperty, genericSourceType, () -> Getter.newFor(genericSourceType)
+        .evaluate(propertyPath));
   }
 
   @SuppressWarnings("unchecked")
@@ -61,21 +62,9 @@ public class PropertyPathCollectionTransformation<RS, X, RD> extends Transformat
       Function<X, RD> transformation) {
     Class<RS> genericSourceType = (Class<RS>) ReassignTransformation
         .findGenericTypeFromMethod(sourceProperty.getReadMethod(), 0);
-    return Getter.newFor(genericSourceType)
+    return evaluatePropertyPath(sourceProperty, genericSourceType, () -> Getter.newFor(genericSourceType)
         .evaluate(propertyPath)
-        .andApply(transformation);
-  }
-
-  @Override
-  protected void performTransformation(PropertyDescriptor sourceProperty, Object source,
-      PropertyDescriptor destinationProperty, Object destination) throws MappingException {
-    Object sourceValue = readOrFail(sourceProperty, source);
-
-    MappedResult result = performValueTransformation(sourceValue, destination);
-
-    if (result.hasValue()) {
-      writeOrFail(destinationProperty, destination, result.getValue());
-    }
+        .andApply(transformation));
   }
 
   @SuppressWarnings({
@@ -118,12 +107,6 @@ public class PropertyPathCollectionTransformation<RS, X, RD> extends Transformat
 
   @Override
   protected void validateTransformation() throws MappingException {
-  }
-
-  @Override
-  MappedResult computeValue(Object sourceObject) {
-    Object sourceValue = readOrFail(sourceProperty, sourceObject);
-    return performValueTransformation(sourceValue, null);
   }
 
   @Override
