@@ -5,6 +5,7 @@ import static com.remondis.remap.MappingException.alreadyMappedProperty;
 import static com.remondis.remap.MappingException.multipleInteractions;
 import static com.remondis.remap.MappingException.notAProperty;
 import static com.remondis.remap.MappingException.zeroInteractions;
+import static com.remondis.remap.MethodReferenceResolver.getPropertyFromMethodReference;
 import static com.remondis.remap.Properties.createUnmappedMessage;
 import static com.remondis.remap.ReflectionUtil.newInstance;
 import static com.remondis.remap.Target.DESTINATION;
@@ -118,6 +119,13 @@ public class MappingConfiguration<S, D> {
    */
   private volatile Constructor<D> destinationConstructor;
 
+  /**
+   * Creates the destination objects if the destination type is a record. The construction plan is resolved when the
+   * mapper is created, because it depends on the complete mapping configuration. Volatile for safe publication when
+   * the mapper is shared between threads.
+   */
+  private volatile RecordFactory<D> recordFactory;
+
   MappingConfiguration(Class<S> source, Class<D> destination) {
     this.source = source;
     this.destination = destination;
@@ -133,14 +141,14 @@ public class MappingConfiguration<S, D> {
   }
 
   private InvocationSensor<?> getSourceInvocationSensor() {
-    if (sourceInvocationSensor == null) {
+    if (sourceInvocationSensor == null && !source.isRecord()) {
       this.sourceInvocationSensor = new InvocationSensor<>(source);
     }
     return sourceInvocationSensor;
   }
 
   private InvocationSensor<?> getDestinationeInvocationSensor() {
-    if (destinationInvocationSensor == null) {
+    if (destinationInvocationSensor == null && !destination.isRecord()) {
       this.destinationInvocationSensor = new InvocationSensor<>(destination);
     }
     return destinationInvocationSensor;
@@ -413,6 +421,9 @@ public class MappingConfiguration<S, D> {
     }
 
     validateMapping();
+    if (destination.isRecord()) {
+      recordFactory = new RecordFactory<>(destination, mappings);
+    }
     sourceInvocationSensor = null;
     destinationInvocationSensor = null;
     return new Mapper<>(this);
@@ -545,6 +556,9 @@ public class MappingConfiguration<S, D> {
    */
   static <R, T> TypedPropertyDescriptor<R> getTypedPropertyFromFieldSelector(Target target, String configurationMethod,
       Class<T> sensorType, TypedSelector<R, T> selector, boolean fluentSetters) {
+    if (sensorType.isRecord()) {
+      return getTypedPropertyFromFieldSelector(null, target, configurationMethod, sensorType, selector, fluentSetters);
+    }
     InvocationSensor<T> invocationSensor = new InvocationSensor<T>(sensorType);
     return getTypedPropertyFromFieldSelector(invocationSensor, target, configurationMethod, sensorType, selector,
         fluentSetters);
@@ -553,6 +567,12 @@ public class MappingConfiguration<S, D> {
   static <R, T> TypedPropertyDescriptor<R> getTypedPropertyFromFieldSelector(InvocationSensor<?> invocationSensor,
       Target target, String configurationMethod, Class<T> sensorType, TypedSelector<R, T> selector,
       boolean fluentSetters) {
+    if (sensorType.isRecord()) {
+      // Records cannot be proxied, so the selected property is determined from the method reference.
+      TypedPropertyDescriptor<R> tpd = new TypedPropertyDescriptor<R>();
+      tpd.property = getPropertyFromMethodReference(target, sensorType, selector, fluentSetters);
+      return tpd;
+    }
     T sensor = (T) invocationSensor.getSensor();
     // Defensively reset the tracking state: a previously failed selector invocation may have left tracked
     // properties on this thread which would corrupt the evaluation of this selector.
@@ -595,6 +615,9 @@ public class MappingConfiguration<S, D> {
    */
   static <T> PropertyDescriptor getPropertyFromFieldSelector(Target target, String configurationMethod,
       Class<T> sensorType, FieldSelector<T> selector, boolean fluentSetters) {
+    if (sensorType.isRecord()) {
+      return getPropertyFromFieldSelector(null, target, configurationMethod, sensorType, selector, fluentSetters);
+    }
     InvocationSensor<T> invocationSensor = new InvocationSensor<T>(sensorType);
     return getPropertyFromFieldSelector(invocationSensor, target, configurationMethod, sensorType, selector,
         fluentSetters);
@@ -602,6 +625,10 @@ public class MappingConfiguration<S, D> {
 
   static <T> PropertyDescriptor getPropertyFromFieldSelector(InvocationSensor<?> invocationSensor, Target target,
       String configurationMethod, Class<T> sensorType, FieldSelector<T> selector, boolean fluentSetters) {
+    if (sensorType.isRecord()) {
+      // Records cannot be proxied, so the selected property is determined from the method reference.
+      return getPropertyFromMethodReference(target, sensorType, selector, fluentSetters);
+    }
     T sensor = (T) invocationSensor.getSensor();
     // Defensively reset the tracking state: a previously failed selector invocation may have left tracked
     // properties on this thread which would corrupt the evaluation of this selector.
@@ -825,10 +852,17 @@ public class MappingConfiguration<S, D> {
    * @return Returns a newly created destination object.
    */
   D map(S source, D destination) {
-    D destinationObject = destination;
     if (source == null) {
       throw MappingException.denyMappingOfNull();
     }
+    RecordFactory<D> factory = recordFactory;
+    if (factory != null) {
+      if (destination != null) {
+        throw MappingException.mapIntoRecordNotSupported(this.destination);
+      }
+      return factory.newInstance(source);
+    }
+    D destinationObject = destination;
     if (destination == null) {
       destinationObject = createDestination();
     }

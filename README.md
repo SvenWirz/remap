@@ -24,7 +24,8 @@
    10. [Mapping other values to a field](#mapping-other-values-to-a-field)
    11. [Restructure a complex object in the destination](#restructure-a-complex-object-in-the-destination)
    12. [Mapping maps](#mapping-maps)
-   13. [Tests](#tests)
+   13. [Mapping Java Records](#mapping-java-records)
+   14. [Tests](#tests)
 9. [Mapping meta model](#mapping-meta-model)
 10. [Spring integration](#spring-integration)
    1. [Spring Boot Issue](#spring-boot-issue)
@@ -71,6 +72,10 @@ ReMap maps a objects of a source to a destination type. As per default ReMap tri
 
 
 ## News
+
+### Java Record mapping support
+
+Since version `4.5.0` ReMap supports Java Records as both source and destination types. Records can be mapped to/from regular POJOs as well as to/from other records — using the same familiar API. See [Mapping Java Records](#mapping-java-records) in the cookbook for details and examples.
 
 ### Map into feature deprecated!
 The map-into feature of ReMap is now deprecated. This function was never correctly implemented and does not work recursively.
@@ -189,9 +194,10 @@ ReMap supports
 * mapping from interface to Java Bean type
 * mapping of nested collections
 * mapping of nested maps
+* mapping of Java Records as source and/or destination type (POJO↔Record, Record↔Record)
 * unit testing of mapping specifications
 * mapping without invasively changing code of involved objects
-* overwrite fields in an instance by specifying the target instance for the mapping
+* overwrite fields in an instance by specifying the target instance for the mapping (not for records)
 * mapping of fluent-style setters (setters having a return type)
 
 ## Limitations
@@ -202,13 +208,17 @@ ReMap supports
     * getter methods are mandatory for source and destination properties
     * setter methods are only mandatory for destination properties
   * fields of primitive type boolean comply with is-method convention as getter.
-  * the declaring type has a public default constructor (this is only necessary for the destination object)
+  * the declaring type has a public default constructor (this is only necessary for the destination object and not required for records)
   * keywords like `transient` do not have an effect on the mapping
 * non-static inner classes are not supported (they do not have a parameterless default constructor!)
 * circular references are currently not supported
 * mapping equal types does not copy object instances!
 * multi-classloader environments are currently not supported. All types must be loaded by the same classloader.
-* Generics cannot be used without limitations: It is possible to build a mapper for generic types, but due to the class literals used when declaring the mapping, the generic type informations gets lost.
+* Generics cannot be used without limitations: It is possible to build a mapper for generic types, but due to the class literals used when declaring the mapping, the generic type informations gets lost. This applies to generic records as well.
+* Java Records (see [Mapping Java Records](#mapping-java-records))
+  * properties of records must be selected by method references like `PersonRecord::name`, inline lambdas are not supported
+  * records cannot be the destination of `map(S source, D dest)`, because records are immutable
+  * property paths cannot start at or pass through records (or other final types)
 
 ## The mapping cookbook
 
@@ -632,6 +642,153 @@ if the following mappers were registered on the mapping:
 - `A3` to `A3Mapped`
 
 
+### Mapping Java Records
+
+ReMap supports Java Records (available since Java 16) as source and destination types. The record components are the properties of a record: they are read by their accessor methods like `name()` and - if the record is the destination - passed to the canonical constructor of the record. All mapping operations except property paths work for records like for Java Beans, and records do not need to be public.
+
+Please note the following differences to Java Beans:
+
+* Properties of records must be selected by **method references** like `PersonRecord::name`. Records are final and cannot be proxied, so ReMap determines the selected property from the method reference. Inline lambdas like `r -> r.name()` are rejected with a `MappingException` when the mapping is configured.
+* Records are immutable, so `Mapper.map(source, destination)` is not supported for record destinations. Use `Mapper.map(source)` to create a new record instance.
+* Omitted components are passed to the canonical constructor as `null` or the default value of primitive types (see [Omitting components](#omitting-components)).
+
+The following examples use these types:
+
+```java
+public class PersonPojo {
+  private String name;
+  private int age;
+  private String email;
+  // constructors, getters, setters …
+}
+
+public record PersonRecord(String name, int age, String email) {}
+
+public record PersonResourceRecord(String fullName, int yearsOld, String emailAddress) {}
+```
+
+#### POJO → Record
+
+When property names match, no additional configuration is needed:
+
+```java
+Mapper<PersonPojo, PersonRecord> mapper = Mapping
+    .from(PersonPojo.class)
+    .to(PersonRecord.class)
+    .mapper();
+
+PersonRecord result = mapper.map(new PersonPojo("Alice", 30, "alice@example.com"));
+// PersonRecord[name=Alice, age=30, email=alice@example.com]
+```
+
+Use `reassign` or `replace` when property names or types differ:
+
+```java
+Mapper<PersonPojo, PersonResourceRecord> mapper = Mapping
+    .from(PersonPojo.class)
+    .to(PersonResourceRecord.class)
+    .replace(PersonPojo::getName, PersonResourceRecord::fullName)
+        .with(name -> name.toUpperCase())
+    .reassign(PersonPojo::getAge).to(PersonResourceRecord::yearsOld)
+    .reassign(PersonPojo::getEmail).to(PersonResourceRecord::emailAddress)
+    .mapper();
+```
+
+#### Record → POJO and Record → Record
+
+Records can be used as source type, too:
+
+```java
+Mapper<PersonRecord, PersonPojo> toPojo = Mapping
+    .from(PersonRecord.class)
+    .to(PersonPojo.class)
+    .mapper();
+
+Mapper<PersonRecord, PersonResourceRecord> toRecord = Mapping
+    .from(PersonRecord.class)
+    .to(PersonResourceRecord.class)
+    .reassign(PersonRecord::name).to(PersonResourceRecord::fullName)
+    .reassign(PersonRecord::age).to(PersonResourceRecord::yearsOld)
+    .reassign(PersonRecord::email).to(PersonResourceRecord::emailAddress)
+    .mapper();
+```
+
+#### Records with getters
+
+Getter methods of a record - for example derived values or getters added for libraries relying on Java Beans - are read-only properties. Like read-only properties of Java Beans, they are mapping sources but no mapping destinations. A getter named like a record component, for example `getName()` for the component `name`, is not a property of its own but selects the record component:
+
+```java
+public record CustomerRecord(String name) {
+  public String getName() { return name; }                  // selects the component name
+  public String getDisplayName() { return "Mr. " + name; }  // read-only property displayName
+}
+```
+
+#### Nested records and collections
+
+Use `useMapper` to map nested records or collections of records, just as you would for Java Beans:
+
+```java
+public record AddressRecord(String street, String city) {}
+public record PersonWithAddressRecord(String name, AddressRecord address) {}
+
+Mapper<AddressPojo, AddressRecord> addressMapper = Mapping
+    .from(AddressPojo.class)
+    .to(AddressRecord.class)
+    .mapper();
+
+Mapper<PersonWithAddressPojo, PersonWithAddressRecord> mapper = Mapping
+    .from(PersonWithAddressPojo.class)
+    .to(PersonWithAddressRecord.class)
+    .useMapper(addressMapper)
+    .mapper();
+
+List<AddressRecord> addresses = addressMapper.map(listOfAddressPojos);
+```
+
+#### Omitting components
+
+When a record component is omitted as destination, the canonical constructor receives `null` for reference types or the default value for primitive types. Use `set` to provide another value:
+
+```java
+Mapper<PersonPojo, PersonRecord> mapper = Mapping
+    .from(PersonPojo.class)
+    .to(PersonRecord.class)
+    .omitInSource(PersonPojo::getEmail)
+    .set(PersonRecord::email).with("unknown@example.com")
+    .mapper();
+```
+
+If the canonical constructor validates its arguments, for example in a compact constructor, a failed validation is reported as `MappingException` naming the record type and the cause.
+
+#### Property paths
+
+Property paths are recorded using proxy objects, so they cannot start at or pass through records. Use `replace` with a transformation function instead:
+
+```java
+Mapper<PersonWithAddressRecord, CityPojo> mapper = Mapping
+    .from(PersonWithAddressRecord.class)
+    .to(CityPojo.class)
+    .omitInSource(PersonWithAddressRecord::name)
+    .replace(PersonWithAddressRecord::address, CityPojo::getCity)
+        .withSkipWhenNull(AddressRecord::city)
+    .mapper();
+```
+
+#### Testing record mappings
+
+Use `AssertMapping` exactly as for Java Bean mappers:
+
+```java
+AssertMapping.of(mapper)
+    .expectReassign(PersonRecord::name).to(PersonResourceRecord::fullName)
+    .expectReassign(PersonRecord::age).to(PersonResourceRecord::yearsOld)
+    .expectReassign(PersonRecord::email).to(PersonResourceRecord::emailAddress)
+    .ensure();
+```
+
+You can find the record mapping test cases [here](src/test/java/com/remondis/remap/records).
+
 ### Tests
 
 ReMap provides an easy way to assert the mapping specification for a mapper instance. These assertions should be used in unit tests to provide regression tests for your mapping configuration.
@@ -768,6 +925,21 @@ This bug was fixed in `net.minidev:accessors-smart:1.2` but is still present in 
 This workaround was tested and should work for most cases. Please file an issue if you are experiencing problems.
 
 # Changelog
+
+## Sidenote for 4.5.0
+New feature: Java Records are supported as source and destination types (see [Mapping Java Records](#mapping-java-records)).
+
+- Record components are the properties of a record. Destination records are created by their canonical constructor, also if the record is not public.
+- Properties of records are selected by method references like `PersonRecord::name`. To analyze method references, `FieldSelector` and `TypedSelector` now extend `java.io.Serializable`. This change is binary and source compatible, but all selector lambdas are now compiled as serializable lambdas.
+- `Mapper.map(source, destination)` throws a `MappingException` for record destinations, because records are immutable.
+- Property paths that start at or pass through records or other final types are reported by a `MappingException` when the mapping is configured.
+
+Behavior changes for records used as mapping source: Before 4.5.0 records were introspected as Java Beans, so only getter methods were properties. Getters remain read-only source properties, and a getter named like a record component selects the component. But:
+
+- Record components are properties now. Components without a getter must be mapped or omitted, otherwise the mapper creation fails. When using `omitOthers()`, such components are mapped implicitly if the destination has a property with the same name.
+- A component whose accessor looks like a getter, for example `boolean isActive`, is the property `isActive` - it was the property `active` before.
+
+The build now checks the binary and source compatibility of the public API against the previous release using japicmp.
 
 ## Sidenote for 4.4.6
 Minor bug fix: Read-only properties inherited through interface methods are now also recognized as mapping destinations.

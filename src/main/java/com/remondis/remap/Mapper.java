@@ -47,6 +47,8 @@ public class Mapper<S, D> {
    * @param source The source object to map to a new destination object.
    * @param destination The destination object to map into. Field affected by the mapping will be overwritten.
    * @return Returns the specified destination object.
+   * @throws MappingException Thrown if the destination type is a record, because records are immutable. Use
+   *         {@link #map(Object)} to create a new record instance.
    * @deprecated This method is deprecated, because the map-into feature of ReMap is not correctly implemented and will
    *             be removed in future release. The complexity of mapping collections in a object tree is beyond of what
    *             ReMap is currently able to deliver. For example: The problem with mapping sets into lists is

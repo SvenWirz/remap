@@ -143,7 +143,8 @@ abstract class Transformation {
   }
 
   /**
-   * Performs a single transformation step while mapping.
+   * Performs a single transformation step while mapping: The destination value is computed by
+   * {@link #computeValue(Object)} and written to the specified destination property.
    *
    * @param sourceProperty The source property
    * @param source The source object to map from.
@@ -151,8 +152,35 @@ abstract class Transformation {
    * @param destination The destination object to map to.
    * @throws MappingException Thrown on any mapping exception.
    */
-  protected abstract void performTransformation(PropertyDescriptor sourceProperty, Object source,
-      PropertyDescriptor destinationProperty, Object destination) throws MappingException;
+  protected void performTransformation(PropertyDescriptor sourceProperty, Object source,
+      PropertyDescriptor destinationProperty, Object destination) throws MappingException {
+    MappedResult result = computeValue(source);
+    if (result.hasValue()) {
+      writeOrFail(destinationProperty, destination, result.getValue());
+    }
+  }
+
+  /**
+   * Computes the destination value of this transformation for the specified source object without writing it. This
+   * defines the mapping semantics of a transformation for all destination types: Java Bean destinations get the
+   * computed value written by their setter, record destinations get it passed to their canonical constructor.
+   * <p>
+   * The default implementation reads the source property and passes the value - even <code>null</code> - to
+   * {@link #performValueTransformation(Object, Object)}. Transformations without a source property operate on the
+   * whole source object.
+   * </p>
+   *
+   * @param source The source object to map from.
+   * @return Returns a {@link MappedResult} specifying the destination value or signals to skip the mapping.
+   * @throws MappingException Thrown on any mapping exception.
+   */
+  MappedResult computeValue(Object source) throws MappingException {
+    if (sourceProperty == null) {
+      return performValueTransformation(source, null);
+    }
+    Object sourceValue = readOrFail(sourceProperty, source);
+    return performValueTransformation(sourceValue, null);
+  }
 
   /**
    * Performs a single value transformation. This method is used to provide single field mappings via

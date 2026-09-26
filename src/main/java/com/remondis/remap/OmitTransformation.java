@@ -62,8 +62,9 @@ class OmitTransformation extends Transformation {
   }
 
   @Override
-  protected void performTransformation(PropertyDescriptor sourceProperty, Object source,
-      PropertyDescriptor destinationProperty, Object destination) throws MappingException {
+  MappedResult computeValue(Object source) {
+    // Omitted properties are neither read nor written.
+    return MappedResult.skip();
   }
 
   @Override
